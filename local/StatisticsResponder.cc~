@@ -1,0 +1,74 @@
+#include <click/config.h>
+#include <elements/local/StatisticsResponder.hh>
+#include <click/args.hh>
+#include <click/error.hh>
+#include <click/glue.hh>
+
+CLICK_DECLS
+
+StatisticsResponder::StatisticsResponder()
+{
+}
+
+StatisticsResponder::~StatisticsResponder()
+{
+}
+
+int
+StatisticsResponder::configure(Vector<String> &conf, ErrorHandler *errh)
+{
+  
+ 	if (Args(conf, this, errh)
+	  .read_mp("mode", _mode)
+      .complete() < 0)
+      return -1;
+
+	return 0;
+}
+
+int
+StatisticsResponder::initialize(ErrorHandler *)
+{
+  return 0;
+}
+Packet *
+StatisticsResponder::simple_action(Packet *p_in){
+
+	if(_mode == 0){
+		uint8_t counter = p_in->user_anno_u(1);
+		counter++;
+		p_in->set_user_anno_u(1,counter);
+	
+	}else if(_mode == 1){
+		int annotation = 8;
+		_sd.packet = 10;//A
+		for(int i=0;i<100;i++)
+		  _sd.a[i] = i;
+	//	WritablePacket *packet = Packet::make((void *)&annotation, sizeof(annotation));
+		WritablePacket *packet = Packet::make((void *)&_sd, sizeof(_sd));
+		if (packet == 0 )
+			return 0;
+	}
+		
+	return packet;
+}
+
+void
+StatisticsResponder::send_stats()
+{
+	printf("TEST1\n");
+	int annotation = 8;
+	WritablePacket *packet = Packet::make((void *)&annotation, sizeof(annotation));
+printf("TEST2\n");
+	if (packet == 0 )
+		return click_chatter( "cannot make packet!");
+
+	 output(0).push(packet);
+printf("TEST3\n");
+
+	
+}
+
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(StatisticsResponder)

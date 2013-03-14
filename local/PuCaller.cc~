@@ -1,0 +1,51 @@
+#include <click/config.h>
+#include <elements/local/PuCaller.hh>
+#include <elements/local/ExponentialDistribution.hh>
+#include <click/args.hh>
+#include <clicknet/ether.h>
+#include <click/error.hh>
+#include <click/glue.hh>
+#include <click/confparse.hh>
+#include <click/handlercall.hh>
+#include "iwlib.h"
+CLICK_DECLS
+
+
+
+PuCaller::PuCaller() {
+}
+
+PuCaller::~PuCaller() {
+}
+
+int
+PuCaller::configure(Vector<String> &conf, ErrorHandler * errh)
+{
+	if (Args(conf, this, errh)
+		.read_mp("LAUNCH_RESPONDER", reinterpret_cast<Element *&>(_llr)) // interface name that will switch the channel.
+	      .complete() < 0)
+	      return -1;
+
+	return 0;
+}
+
+
+
+
+Packet *
+PuCaller::simple_action(Packet *p_in)
+{
+	_count ++;
+	if(_count % 80 == 0){
+		click_chatter("WASSA3 LEL PU YALAAAAAAA!!!");
+		HandlerCall::call_write("pu_sensed 6",_llr, 0);		
+		return 0;
+	}
+
+
+  return p_in;
+}
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(PuCaller)
+

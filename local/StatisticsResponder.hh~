@@ -1,0 +1,38 @@
+#ifndef CLICK_STATISTICSRESPONDER_HH
+#define CLICK_STATISTICSRESPONDER_HH
+#include <click/element.hh>
+#include <click/glue.hh>
+#include <elements/local/StatisticsDataPacket.hh>
+CLICK_DECLS
+
+/*
+ * =c
+ *
+ * StatisticsResponder()
+ *
+ */
+
+class StatisticsResponder : public Element { public:
+
+  StatisticsResponder();
+  ~StatisticsResponder();
+
+  const char *class_name() const		{ return "StatisticsResponder"; }
+  const char *port_count() const		{ return "1/1"; }
+  const char *processing() const		{ return PUSH; }
+
+  int configure(Vector<String> &, ErrorHandler *);
+  bool can_live_reconfigure() const		{ return true; }
+  int initialize(ErrorHandler *);
+  Packet * simple_action(Packet *p_in);
+
+//Function called by Statistics Collector to send it's data to the central node collecting stats
+  void send_stats();
+
+  struct stats_data _sd; 
+  int mode;
+
+};
+
+CLICK_ENDDECLS
+#endif

@@ -1,0 +1,41 @@
+
+#include <click/config.h>
+#include <elements/local/launchcounter.hh>
+#include <click/glue.hh>
+CLICK_DECLS
+
+LaunchCounter::LaunchCounter()
+{
+}
+
+LaunchCounter::~LaunchCounter()
+{
+}
+
+int
+LaunchCounter::initialize(ErrorHandler *)
+{
+    _usec_accum = 0;
+    _count = 0;
+    return 0;
+}
+
+inline Packet *
+LaunchCounter::simple_action(Packet *p)
+{
+	Timestamp* ts = (Timestamp *)(p->data()+20);
+	click_chatter("Packet Time:: %f", ts->doubleval());
+	click_chatter("NOW:: %f", Timestamp::now().doubleval());
+        _usec_accum += Timestamp::now().doubleval() - ts->doubleval();
+        _count++;
+	click_chatter("Counter:: %d", _count);
+	click_chatter("Average Time:: %f", _usec_accum / _count);
+	
+    return p;
+}
+
+
+
+CLICK_ENDDECLS
+ELEMENT_REQUIRES(userlevel int64)
+EXPORT_ELEMENT(LaunchCounter)

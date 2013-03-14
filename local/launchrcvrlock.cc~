@@ -1,0 +1,701 @@
+#include <click/config.h>
+#include <elements/local/launch.hh>
+#include <elements/local/launchrcvrlock.hh>
+#include <elements/local/launchrtrsender.hh>
+#include <click/args.hh>
+#include <clicknet/ether.h>
+#include <click/error.hh>
+#include <click/glue.hh>
+#include <click/confparse.hh>
+#include <click/straccum.hh>
+#include<stdio.h>
+#include<stdlib.h>
+#include "iwlib.h"
+
+#include <string.h>
+
+
+#include <netinet/ether.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+CLICK_DECLS
+
+#define IW_SET_EXT_ERR(skfd, ifname, request, wrq, rname) \
+	do { \
+	if(iw_set_ext(skfd, ifname, request, wrq) < 0) { \
+		fprintf(stderr, "    SET failed on device %-1.16s ; %s.\n", \
+			ifname, strerror(errno)); \
+		return(-5); \
+	} } while(0)
+
+
+LaunchLockResponder::LaunchLockResponder()
+: _lock_timeout_timer(this)
+{
+	_locked_channel = 0;
+	_lock_count = 0;
+}
+
+LaunchLockResponder::~LaunchLockResponder()
+{
+}
+
+int
+LaunchLockResponder::configure(Vector<String> &conf, ErrorHandler * errh)
+{
+	if (Args(conf, this, errh)
+		.read_mp("IP", _ip)
+		.read_mp("DEVNAME", _ifname)
+		.read_mp("WAIT", _lock_timeout_ms)
+		.read_mp("CH0", _pu_behavior0)
+		.read_mp("CH1", _pu_behavior1)
+		.read_mp("CH2", _pu_behavior2)
+		.read_p("FROM_DEV", reinterpret_cast<Element *&>(_from_dev))
+		.read_mp("ETH", _my_eth)
+		.read_p("ROUTER", reinterpret_cast<Element *&>(_router))
+	  	.read_mp("LAUNCHRTRSENDER", reinterpret_cast<Element *&>(_rtr_sender))
+		.complete() < 0)
+      return -1;
+
+	_lock_timeout_timer.initialize(this);
+
+	
+	return 0;
+}
+
+
+
+Packet *
+LaunchLockResponder::simple_action(Packet *p_in)
+{
+	WritablePacket *p = p_in->uniqueify();
+	struct launch_ctrl_hdr * lauch_hdr_ptr = (launch_ctrl_hdr *) (p->data()+14);
+
+	lauch_hdr_ptr->neighbor_ip = _ip;
+	
+
+	struct launch_ctrl_hdr * launch_hdr = (struct launch_ctrl_hdr *) (p_in->data()+14);
+
+	if(_lock_count ==0)
+	{
+
+		char buffer [3000];
+		int n;
+	
+
+//		n = sprintf (buffer, "sudo iwlist %s scan",_ifname.c_str());
+//		n = system(buffer);
+	
+
+//		g_type_init();
+//		DBusGConnection *bus;
+//		DBusGProxy *proxy;
+//		GError *error = NULL;
+
+		/* Get system bus */
+//		bus = dbus_g_bus_get (DBUS_BUS_SYSTEM, NULL);
+//		if(bus == NULL) printf("################kkwaksaaaaaaa###########\n ");
+		/* Create a D-Bus proxy; NM_DBUS_* defined in NetworkManager.h */
+//		proxy = dbus_g_proxy_new_for_name (bus,
+//				                   NM_DBUS_SERVICE,
+//				                   NM_DBUS_PATH_SETTINGS,
+//				                   NM_DBUS_IFACE_SETTINGS);
+
+
+//		dbus_g_proxy_call (proxy, "RequestScan", &error, G_TYPE_STRING, "wlan0", G_TYPE_INVALID, G_TYPE_INVALID);
+
+
+//		change_channel(_ifname,lauch_hdr_ptr->channel);
+		p->set_user_anno_u8(0,lauch_hdr_ptr->channel);
+
+		click_chatter("Make Lock Rsponse Packet");
+		ErrorHandler errh;
+		_from_dev->initialize(&errh);
+		_locked_channel = lauch_hdr_ptr->channel;
+		lauch_hdr_ptr->type = launch_ctrl_hdr::LAUNCH_LOCK_RES;
+		lauch_hdr_ptr->lock_response = 1;
+		_lock_count++;
+		click_ether *ethh = p->ether_header();
+		uint8_t source_address[6];
+		memcpy(source_address, ethh->ether_shost, 6);
+		memcpy(ethh->ether_shost, ethh->ether_dhost, 6);
+		memcpy(ethh->ether_dhost, source_address, 6);
+
+
+		_lock_timeout_timer.schedule_after_msec(_lock_timeout_ms);
+
+
+		return p;
+	}
+	if((_lock_count > 0 && lauch_hdr_ptr->channel == _locked_channel))
+	{
+
+		_locked_channel = lauch_hdr_ptr->channel;
+		lauch_hdr_ptr->type = launch_ctrl_hdr::LAUNCH_LOCK_RES;
+		lauch_hdr_ptr->lock_response = 1;
+		_lock_count++;
+		click_ether *ethh = p->ether_header();
+		uint8_t source_address[6];
+		memcpy(source_address, ethh->ether_shost, 6);
+		memcpy(ethh->ether_shost, ethh->ether_dhost, 6);
+		memcpy(ethh->ether_dhost, source_address, 6);
+
+		_lock_timeout_timer.schedule_after_msec(_lock_timeout_ms);
+		return p;
+	}
+	lauch_hdr_ptr->type = launch_ctrl_hdr::LAUNCH_LOCK_RES;
+	lauch_hdr_ptr->lock_response = 0;
+
+	switch(_locked_channel)
+	{
+		case 1:
+			lauch_hdr_ptr->channel = 1;
+			lauch_hdr_ptr->pu_behavior = _pu_behavior0;
+			break;
+		case 6:
+			lauch_hdr_ptr->channel = 6;
+			lauch_hdr_ptr->pu_behavior = _pu_behavior1;
+			break;
+		case 11:
+			lauch_hdr_ptr->channel = 11;
+			lauch_hdr_ptr->pu_behavior = _pu_behavior2;
+			break; 
+	}
+
+
+	click_ether *ethh = p->ether_header();
+	uint8_t source_address[6];
+	memcpy(source_address, ethh->ether_shost, 6);
+	memcpy(ethh->ether_shost, ethh->ether_dhost, 6);
+	memcpy(ethh->ether_dhost, source_address, 6);
+
+
+	return p;
+
+}
+
+
+void
+LaunchLockResponder::run_timer(Timer * t)
+{
+	
+}
+
+
+int
+LaunchLockResponder::pu_sensed(const String &s, Element *e, void *, ErrorHandler *errh)
+{
+	printf("PU_SENSED");
+        LaunchLockResponder *llr = static_cast<LaunchLockResponder *>(e);
+	uint32_t channel_sensed = atoi(s.c_str());
+
+	//this machine can no longer use the sensed channel
+	llr->_router->cant_use_channel(channel_sensed);
+	llr->_router->set_channel_loc_negative();
+	llr->_router->set_ready_for_another_packet_negative();
+	
+
+
+	if(llr->_locked_channel == channel_sensed)
+	{	
+		llr->_locked_channel = 0;
+		llr->_lock_count = 0;
+	}
+
+	//neighbors shouldn't communicate with this machine on the sensed channel
+	//send LOCK_RES to update the state of the lock
+	struct launch_ctrl_hdr  _lh;
+
+
+
+
+	if(!llr->_router->can_use_1)
+	{
+		if(llr->_pu_behavior1 <= llr->_pu_behavior2 &&llr->_router->can_use_6)
+		{
+			click_chatter("CONNECTING TO 6");
+			_lh.channel=6;
+			_lh.pu_behavior = llr->_pu_behavior1;
+		}
+		else if(llr->_pu_behavior2 <= llr->_pu_behavior1 &&llr->_router->can_use_11)
+		{
+			click_chatter("CONNECTING TO 11");
+			_lh.channel=11;
+			_lh.pu_behavior = llr->_pu_behavior2;
+		}
+		else
+		{
+			click_chatter("1 ... ANA MSH 3AREFNY .. ANA TOT MEHY ... ANA MSH HOP !!");
+			click_chatter("7RO7 2DWAR .. 7RO7 2DWAR .. 7RO7 2DWAR ... 3ALA SPECTRUM !!");
+			click_chatter("CHRASHING .... .... !!!!!!");
+			//exit(0);			
+		}
+	}
+	else if(!llr->_router->can_use_6)
+	{
+		if(llr->_pu_behavior0 <= llr->_pu_behavior2 &&llr->_router->can_use_1)
+		{
+			click_chatter("CONNECTING TO 1");
+			_lh.channel=1;
+			_lh.pu_behavior = llr->_pu_behavior0;
+		}
+		else if(llr->_pu_behavior2 <= llr->_pu_behavior0 &&llr->_router->can_use_11)
+		{
+			click_chatter("CONNECTING TO 11");
+			_lh.channel=11;
+			_lh.pu_behavior = llr->_pu_behavior2;
+		}
+		else
+		{
+			click_chatter("6 ... ANA MSH 3AREFNY .. ANA TOT MEHY ... ANA MSH HOP !!");
+			click_chatter("7RO7 2DWAR .. 7RO7 2DWAR .. 7RO7 2DWAR ... 3ALA SPECTRUM !!");
+			click_chatter("CHRASHING .... .... !!!!!!");
+			//exit(0);			
+		}
+
+	}
+	else if(!llr->_router->can_use_11)
+	{
+		if(llr->_pu_behavior1 <= llr->_pu_behavior0 &&llr->_router->can_use_6)
+		{
+			click_chatter("CONNECTING TO 6");
+			_lh.channel=6;
+			_lh.pu_behavior = llr->_pu_behavior1;
+		}
+		else if(llr->_pu_behavior0 <= llr->_pu_behavior1 &&llr->_router->can_use_1)
+		{
+			click_chatter("CONNECTING TO 1");
+			_lh.channel=1;
+			_lh.pu_behavior = llr->_pu_behavior0;
+		}
+		else
+		{
+			click_chatter("11 ... ANA MSH 3AREFNY .. ANA TOT MEHY ... ANA MSH HOP !!");
+			click_chatter("7RO7 2DWAR .. 7RO7 2DWAR .. 7RO7 2DWAR ... 3ALA SPECTRUM !!");
+			click_chatter("CHRASHING .... .... !!!!!!");
+			//exit(0);			
+		}
+
+	}
+	else
+	{
+		click_chatter("mfesh 7aga naf3a");
+		click_chatter("ANA MSH 3AREFNY .. ANA TOT MEHY ... ANA MSH HOP !!");
+		click_chatter("7RO7 2DWAR .. 7RO7 2DWAR .. 7RO7 2DWAR ... 3ALA SPECTRUM !!");
+		click_chatter("CHRASHING .... .... !!!!!!");
+		//exit(0);
+	}
+
+
+/*
+	if ((llr->_pu_behavior0 >= llr->_pu_behavior1  && llr->_pu_behavior0 >= llr->_pu_behavior2 && llr->_router->can_use_1 )
+	{
+		click_chatter("CONNECTING TO 1");
+
+		_lh.channel=1;
+		_lh.pu_behavior = llr->_pu_behavior0;
+	}
+	else if (llr->_pu_behavior1 >= llr->_pu_behavior0 && llr->_pu_behavior1 >= llr->_pu_behavior2 && llr->_router->can_use_6)
+	{
+		click_chatter("CONNECTING TO 6");
+		_lh.channel=6;
+		_lh.pu_behavior = llr->_pu_behavior1;
+	}
+	else if (llr->_pu_behavior2 >= llr->_pu_behavior0 && llr->_pu_behavior2 >= llr->_pu_behavior1 && llr->_router->can_use_11)
+	{
+		click_chatter("CONNECTING TO 11");
+		_lh.channel=11;
+		_lh.pu_behavior = llr->_pu_behavior2;
+	}
+	else
+	{
+		click_chatter("CONNECTING TO 11 BARDO");
+		_lh.channel=11;
+		_lh.pu_behavior = 0;
+	}*/
+
+
+	WritablePacket *packet = Packet::make((void *)&_lh, sizeof(_lh));
+
+	if (packet == 0 )
+	{	
+		click_chatter( "cannot make packet!");
+		return 0;
+	} 
+	struct launch_ctrl_hdr * format = (struct launch_ctrl_hdr *) packet->data();
+
+	format->type = launch_ctrl_hdr::LAUNCH_LOCK_RES;
+	format->lock_response = 0;
+	format->neighbor_ip = llr->_ip;
+	format->channel =1;
+	format->channel1 =6;
+	format->channel2 =11;
+
+	format->pu_behavior = (uint32_t)(llr->_pu_behavior0*100.0);
+	format->pu_behavior1 = (uint32_t)(llr->_pu_behavior1*100.0);
+	format->pu_behavior2 = (uint32_t)(llr->_pu_behavior2*100.0);
+
+	if(!llr->_router->can_use_1)
+	{
+		llr->_pu_behavior0 = 2000;
+		format->pu_behavior = 2000;
+	}
+	if(!llr->_router->can_use_6)
+	{
+		llr->_pu_behavior1 = 2000;
+		format->pu_behavior1 = 2000;
+	}
+	if(!llr->_router->can_use_11)
+	{
+		llr->_pu_behavior2 = 2000;
+		format->pu_behavior2 = 2000;
+	}
+
+	printf("SENDING PU BEHAVIORS %d %d %d \n", format->pu_behavior, format->pu_behavior1, format->pu_behavior2);
+	//format->lock_response = 0;	
+	//Push Ethernet header
+	struct click_ether ethh;
+
+
+	memset(ethh.ether_dhost,0xff,6);
+
+	memcpy(ethh.ether_shost, llr->_my_eth.data(), 6);
+	ethh.ether_type = 0x0007;
+ 
+	WritablePacket *q = packet->push(14);
+	memcpy(q->data(), &ethh, 14);
+	q->set_user_anno_u8(0,_lh.channel);
+	llr->output(0).push(q);
+
+    return 0;
+}
+
+
+void
+LaunchLockResponder::add_handlers()
+{
+    add_write_handler("pu_sensed", pu_sensed, 0);
+}
+
+/*
+void
+LaunchLockResponder::change_channel(String _if_name,uint8_t channel)
+
+{
+////////////////////////////////////PARAMETER 1/////////////////////////////////
+	char * if_name = _if_name.c_str(); 
+////////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////NEW IMPLEMENTATION////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+	char buffer [3000];
+	int n;
+	int freq;
+	char*name;
+	char*bssid;
+	char* present_network_name;
+	char null_address [18];
+	char current_address [18];
+
+	n=sprintf (null_address, "00:00:00:00:00:00\0");
+	int channel_int;
+
+	if(channel == 1)
+	{
+		channel_int = 1;
+		name = "teetteet1";
+		present_network_name = "teetteet1char_";
+		freq = 2412;
+		bssid = "01:01:01:01:01:01";
+	}
+	else if (channel == 6)
+	{
+		channel_int = 6;
+		name = "teetteet6";
+		present_network_name = "teetteet6char_";
+		freq = 2437;
+		bssid = "06:06:06:06:06:06";
+	}
+	else if (channel == 11)
+	{
+		channel_int = 11;
+		name = "teetteet11";
+		present_network_name = "teetteet11har_";
+		freq = 2462;
+		bssid = "11:11:11:11:11:11";
+	}
+
+
+	n = sprintf (buffer, "sudo ifconfig %s down",if_name);
+	n = system(buffer);
+
+//	n = sprintf (buffer, "sudo iw %s set type ibss",if_name);
+//	n = system(buffer);
+	printf("sudo iwconfig %s mode Ad-Hoc channel %d",if_name,channel_int);
+	n = sprintf (buffer, "sudo iwconfig %s mode Ad-Hoc channel %d",if_name,channel);
+	n = system(buffer);
+	printf("sudo ifconfig %s up\n",if_name);
+	n = sprintf (buffer, "sudo ifconfig %s up",if_name);
+	n = system(buffer);
+
+//	n = sprintf (buffer, "sudo iw %s ibss join %s %d",if_name,name,freq);
+//	n = system(buffer);
+	printf("sudo iwconfig %s essid %s\n",if_name,name);
+	n = sprintf (buffer, "sudo iwconfig %s essid %s",if_name,name);
+	n = system(buffer);
+	
+	printf("sudo ifconfig %s 192.168.%d.1 netmask 255.255.255.0\n",if_name,channel);
+	n = sprintf (buffer, "sudo ifconfig %s 192.168.%d.1 netmask 255.255.255.0",if_name,channel);
+	n = system(buffer);
+
+
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0); 
+	struct iwreq wrq;
+
+	printf("INIT. SWITCHING  ...\n");
+	sleep(10);
+	/*do
+	{
+		//sleep(1);
+		if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+		{
+			unsigned char *u;
+			printf("####fale7\n");
+			u = (unsigned char *) &wrq.u.ap_addr.sa_data;	
+			n=sprintf (current_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		}
+		else
+		{
+			printf("####msh fale7\n");
+		}
+
+		printf("%s null\n",null_address);
+		printf("%s current\n",current_address);
+	}while(strcmp(null_address,current_address)==0);*/
+
+
+	
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////OLD IMPLEMENTATION////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+/*	struct iwreq wrq;
+	char starting_address [18];
+	char null_address [18];
+	int n;
+
+	
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0); ;
+
+	
+
+	if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+	{		
+		printf("####fale7\n");
+		unsigned char *u;
+		u = (unsigned char *) &wrq.u.ap_addr.sa_data;
+		//printf("%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X mfesh fyda\n",u[0], u[1], u[2], u[3], u[4], u[5]);
+		n=sprintf (starting_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		n=sprintf (null_address, "00:00:00:00:00:00\0");
+
+		printf("%s starting\n",starting_address);
+		printf("%s null\n",null_address);
+	}
+	else
+	{
+		printf("####msh fale7\n");
+	}
+
+
+
+
+
+	NMClient * my_client = nm_client_new();
+
+	const GPtrArray * devices = nm_client_get_devices(my_client);
+	NMDevice * wifi_1;
+	
+	NMConnection *connection;
+	NMSettingConnection *s_con;
+	NMSettingWireless *s_wireless;	
+	char *uuid;
+	
+	connection = nm_connection_new ();
+	
+	s_con = (NMSettingConnection *) nm_setting_connection_new ();
+	
+	uuid = nm_utils_uuid_generate ();
+	g_object_set (s_con,
+			  NM_SETTING_CONNECTION_TYPE, NM_SETTING_WIRELESS_SETTING_NAME,
+			  NM_SETTING_CONNECTION_UUID, uuid,
+			  NULL);
+	g_free (uuid);
+	g_object_set (G_OBJECT (s_con), NM_SETTING_CONNECTION_AUTOCONNECT, FALSE, NULL);
+	
+	nm_connection_add_setting (connection, (NMSetting *) s_con);	
+	
+	GByteArray * ssid = g_byte_array_new ();
+	
+	char*name;
+	char* present_network_name;
+
+	if(channel == 1)
+	{
+		name = "teetteet1";
+		present_network_name = "teetteet1char_";
+	}
+	else if (channel == 6)
+	{
+		name = "teetteet6";
+		present_network_name = "teetteet6char_";
+	}
+	else if (channel == 11)
+	{
+		name = "teetteet11";
+		present_network_name = "teetteet11har_";
+	}
+
+
+
+
+	g_byte_array_append(ssid, name,10);
+
+	s_wireless = (NMSettingWireless *) nm_setting_wireless_new ();
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_SSID, ssid, NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_MODE, "adhoc", NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_SEC, NULL, NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_BAND, "bg", NULL);
+///////////////////////////////////////////////////PARAMETER 2//////////////////////////////////
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_CHANNEL, channel, NULL);
+////////////////////////////////////////////////////////////////////////////////////////////////
+	nm_connection_add_setting (connection, (NMSetting *) s_wireless);
+
+	NMSettingIP4Config *s_ip4;
+	s_ip4 = (NMSettingIP4Config *) nm_setting_ip4_config_new ();
+	g_object_set (s_ip4, NM_SETTING_IP4_CONFIG_METHOD, NM_SETTING_IP4_CONFIG_METHOD_SHARED, NULL);	
+	nm_connection_add_setting (connection, (NMSetting *) s_ip4);
+
+	NMSettingIP6Config *s_ip6;
+	s_ip6 = (NMSettingIP6Config *) nm_setting_ip6_config_new ();
+	g_object_set (s_ip6, NM_SETTING_IP6_CONFIG_METHOD, NM_SETTING_IP6_CONFIG_METHOD_IGNORE, NULL);	
+	nm_connection_add_setting (connection, (NMSetting *) s_ip6);
+	
+	GPtrArray * devices_connected = nm_client_get_devices(my_client);
+
+	int j;
+	for(j=0;j<devices_connected->len;j++)
+	{
+		if(strcmp (nm_device_get_iface((NMDevice *)g_ptr_array_index(devices_connected,j)),if_name)==0 )
+		{
+			wifi_1 = (NMDevice *)g_ptr_array_index(devices_connected,j);
+			NMAccessPoint * currently_connected = nm_device_wifi_get_active_access_point((NMDeviceWifi*)wifi_1);
+			if(currently_connected!= NULL)
+			{
+				const GByteArray * current_ssid = nm_access_point_get_ssid(currently_connected);
+				printf("current ap name is: %s \n", (char *)current_ssid->data);
+				if(strcmp(present_network_name, (char *)current_ssid->data)==0)
+					return;
+			}
+			else
+			{
+				printf("NO ACCESS POINT\n");
+			}
+		}
+	}
+*//*
+	char essid[0];
+	wrq.u.essid.flags = 0;
+	essid[0] = '\0';
+	wrq.u.essid.pointer = (caddr_t) essid;
+	wrq.u.essid.length = strlen(essid) ;
+	IW_SET_EXT_ERR(skfd, if_name, SIOCSIWESSID, &wrq, "Set ESSID");*/
+/*	sleep(1);
+
+	GPtrArray * seen_aps = nm_device_wifi_get_access_points ((NMDeviceWifi *)wifi_1);
+	NMAccessPoint * connection_ap = NULL;
+
+	if(seen_aps != NULL)
+	{
+		printf("found access points .. \n");
+
+		for (j =0; j < seen_aps->len; j++)
+		{
+			NMAccessPoint * ap = (NMAccessPoint *)g_ptr_array_index(seen_aps,j);
+			guint mode = nm_access_point_get_mode(ap);
+
+			if(mode == NM_802_11_MODE_ADHOC)
+			{
+				const GByteArray * ap_name  = nm_access_point_get_ssid(ap);
+				if(ap_name->data != NULL)
+				{
+					printf("ap name is: %s \n", (char *)ap_name->data);
+					if(strcmp(present_network_name, (char *)ap_name->data)==0)
+					{
+						connection_ap = ap;
+						NMSettingIP4Config *s_ip4_2;
+						s_ip4_2 = (NMSettingIP4Config *) nm_setting_ip4_config_new ();
+						g_object_set (s_ip4_2, NM_SETTING_IP4_CONFIG_METHOD, NM_SETTING_IP4_CONFIG_METHOD_AUTO, NULL);	
+						nm_connection_add_setting (connection, (NMSetting *) s_ip4_2);
+
+						printf("found it\n");
+					}
+				}
+			}
+		}
+	}
+
+	printf("activating\n");
+
+	nm_client_add_and_activate_connection (my_client,
+						connection,
+						wifi_1,
+						connection_ap ? nm_object_get_path (NM_OBJECT (connection_ap)) : NULL,
+						NULL,
+						NULL);
+
+	char current_address [18];
+	do
+	{
+		sleep(1);
+		if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+		{
+			unsigned char *u;
+			printf("####fale7\n");
+			u = (unsigned char *) &wrq.u.ap_addr.sa_data;	
+			//printf("%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X mfesh fyda\n",u[0], u[1], u[2], u[3], u[4], u[5]);
+			n=sprintf (current_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		}
+		else
+		{
+			printf("####msh fale7\n");
+		}
+		printf("%s starting\n",starting_address);
+		printf("%s null\n",null_address);
+		printf("%s current\n",current_address);
+
+	}while(strcmp(starting_address,current_address)==0 || strcmp(null_address,current_address)==0);
+*/
+
+//}
+
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(LaunchLockResponder)

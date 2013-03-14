@@ -1,0 +1,514 @@
+#include <click/config.h>
+#include <elements/local/launch.hh>
+#include <elements/local/launchrouter.hh>
+#include <elements/local/launchlockrequester.hh>
+#include <elements/local/LaunchLockResponseHandler.hh>
+#include <elements/local/launchrtrsender.hh>
+#include <click/args.hh>
+#include <clicknet/ether.h>
+#include <click/error.hh>
+#include <click/glue.hh>
+#include <click/confparse.hh>
+#include <unistd.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include "iwlib.h"
+
+#include <string.h>
+
+
+#include <netinet/ether.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+
+CLICK_DECLS
+
+#define IW_SET_EXT_ERR(skfd, ifname, request, wrq, rname) \
+	do { \
+	if(iw_set_ext(skfd, ifname, request, wrq) < 0) { \
+		fprintf(stderr, "    SET failed on device %-1.16s ; %s.\n", \
+			ifname, strerror(errno)); \
+		return; \
+	} } while(0)
+
+
+
+
+
+
+
+LaunchLockResponseHandler::LaunchLockResponseHandler()
+{
+	//_already_has_lock = 0;
+}
+
+LaunchLockResponseHandler::~LaunchLockResponseHandler()
+{
+}
+
+int
+LaunchLockResponseHandler::configure(Vector<String> &conf, ErrorHandler * errh)
+{
+	if (Args(conf, this, errh)
+	  .read_mp("IF", _ifname)
+	  .read_mp("IP", _ip)
+	  .read_mp("LAUNCHRTRSENDER", reinterpret_cast<Element *&>(_rtr_sender))
+      	  .read_mp("ROUTER", reinterpret_cast<Element *&>(_router))
+	  .read_mp("TO_DEV", reinterpret_cast<Element *&>(_to_dev))
+      .complete() < 0)
+      return -1;
+
+	return 0;
+}
+
+
+
+
+Packet *
+LaunchLockResponseHandler::simple_action(Packet *p_in)
+{
+	click_chatter("RESPONDING TO LOCK");
+	struct launch_ctrl_hdr * launch_hdr_ptr = (struct launch_ctrl_hdr *) (p_in->data()+14);
+	if(launch_hdr_ptr->lock_response == 1)
+	{
+		click_chatter("RESPONDING TO LOCK1");
+		if(_router->_already_has_lock == 0)
+		{
+			click_chatter("RESPONDING TO LOCK1.1");
+			_router->_already_has_lock = 1;
+			char buffer [3000];
+			int n;
+			//n = sprintf (buffer, "sudo ifconfig %s down",_ifname.c_str());
+			//n = system(buffer);
+			//n = sprintf (buffer, "sudo iwconfig %s essid teetteet%d channel %d key off mode Ad-Hoc",_ifname.c_str(),launch_hdr_ptr->channel,launch_hdr_ptr->channel);
+			//n = system(buffer);
+
+			//n = sprintf (buffer, "sudo ifconfig %s %s netmask 255.255.255.0 broadcast 10.0.0.255 promisc",_ifname.c_str(),_ip.unparse().c_str());
+			//n = system(buffer);
+			//n = sprintf (buffer, "sudo ifconfig %s up",_ifname.c_str());
+			//n = system(buffer);
+
+
+			printf("TAAANY############################\n");
+
+//			n = sprintf (buffer, "sudo iwconfig %s essid off",_ifname.c_str());
+//			n = system(buffer);
+			
+//			n = sprintf (buffer, "sudo iwlist %s scan",_ifname.c_str());
+//			n = system(buffer);
+//			FILE * lsofFile_p = popen(buffer,"r");
+
+//			char buffer_output[1024];
+//			char *line_p = fgets(buffer_output, sizeof(buffer_output), lsofFile_p);
+//			pclose(lsofFile_p);
+
+
+
+
+
+//			n = system(buffer);
+//			sleep(4);
+		//			change_channel(_ifname,launch_hdr_ptr->channel);
+//			sleep(10);
+			//n = sprintf (buffer, "sudo ifconfig %s %s netmask 255.255.255.0 broadcast 10.0.0.255",_ifname.c_str(),_ip.unparse().c_str());
+			//n = system(buffer);
+		
+
+			ErrorHandler  teet;
+			_to_dev->initialize(&teet);
+			p_in->set_user_anno(0,launch_hdr_ptr->channel);
+			_router->set_channel_loc_positive();
+			return p_in;
+	/////////////////////////////////////
+
+			//_rtr_sender->send_RTR();
+
+	///////////////////////////////////////////
+		}
+		else
+		{
+			click_chatter("RESPONDING TO LOCK1.2");
+		}
+	}
+	else
+	{
+		click_chatter("RESPONDING TO LOCK2");
+		_router->_already_has_lock = 0;
+		_router->set_channel_loc_negative();
+		_router->update_route(launch_hdr_ptr->neighbor_ip, launch_hdr_ptr->channel, launch_hdr_ptr->pu_behavior,launch_hdr_ptr->channel1, launch_hdr_ptr->pu_behavior1,launch_hdr_ptr->channel2, launch_hdr_ptr->pu_behavior2);
+	}
+    return 0;
+}
+////////////////////////////////////////////////////////////////////
+/*
+void
+LaunchLockResponseHandler::change_channel(String _if_name,uint8_t channel)
+
+{
+////////////////////////////////////PARAMETER 1/////////////////////////////////
+	char * if_name = _if_name.c_str(); 
+
+//new char[strlen(_if_name)];
+//	strcpy(if_name,_if_name);
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////NEW IMPLEMENTATION////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+	char null_address [18];
+	char current_address [18];
+	char buffer [3000];
+	int n;
+	int freq;
+	char*name;
+	char* present_network_name;
+
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0); 
+	struct iwreq wrq;
+	n=sprintf (null_address, "00:00:00:00:00:00\0");
+
+	if(channel == 1)
+	{
+		name = "teetteet1";
+		present_network_name = "teetteet1char_";
+		freq = 2412;
+	}
+	else if (channel == 6)
+	{
+		name = "teetteet6";
+		present_network_name = "teetteet6char_";
+		freq = 2437;
+	}
+	else if (channel == 11)
+	{
+		name = "teetteet11";
+		present_network_name = "teetteet11har_";
+		freq = 2462;
+	}
+	
+	n = sprintf (buffer, "sudo ifconfig %s down",if_name);
+	n = system(buffer);
+
+//	n = sprintf (buffer, "sudo iw %s set type ibss",if_name);
+//	n = system(buffer);
+	click_chatter("sudo iwconfig %s mode Ad-Hoc channel %d",if_name,channel);
+	n = sprintf (buffer, "sudo iwconfig %s mode Ad-Hoc channel %d",if_name,channel);
+	n = system(buffer);
+
+	n = sprintf (buffer, "sudo ifconfig %s up",if_name);
+	n = system(buffer);
+
+//	n = sprintf (buffer, "sudo iw %s ibss join %s %d ",if_name,name,freq);
+//	n = system(buffer);
+
+	n = sprintf (buffer, "sudo iwconfig %s essid %s ",if_name,name);
+	n = system(buffer);
+
+	n = sprintf (buffer, "sudo ifconfig %s 192.168.%d.2 netmask 255.255.255.0",if_name,channel);
+	n = system(buffer);
+
+	char essid[15];
+	memset(essid, '\0', sizeof(essid));
+	wrq.u.essid.pointer = (caddr_t) essid;
+	wrq.u.essid.length = 15;
+	wrq.u.essid.flags = 0;
+	if(iw_get_ext(skfd, if_name, SIOCGIWESSID, &wrq) >= 0)
+	{
+		printf("$$$$$$$$$$$$$$$$$$$$   CONNECTED NETWORK %s \n", essid);
+	}
+	
+	printf("SWITCHING ..\n");
+
+	do
+	{
+		//sleep(1);
+		if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+		{
+			unsigned char *u;
+//			printf("####fale7\n");
+			u = (unsigned char *) &wrq.u.ap_addr.sa_data;	
+			n=sprintf (current_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		}
+		else
+		{
+			printf("####msh fale7\n");
+		}
+
+//		printf("%s null\n",null_address);
+//		printf("%s current\n",current_address);
+	}while(strcmp(null_address,current_address)==0);
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////OLD IMPLEMENTATION////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+/*	struct iwreq wrq;
+	char starting_address [18];
+	char null_address [18];
+	int n;
+
+	
+	int skfd = socket(AF_INET, SOCK_DGRAM, 0); ;
+
+	
+
+	if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+	{		
+		printf("####fale7\n");
+		unsigned char *u;
+		u = (unsigned char *) &wrq.u.ap_addr.sa_data;
+		//printf("%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X mfesh fyda\n",u[0], u[1], u[2], u[3], u[4], u[5]);
+		n=sprintf (starting_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		n=sprintf (null_address, "00:00:00:00:00:00\0");
+
+		printf("%s starting\n",starting_address);
+		printf("%s null\n",null_address);
+	}
+	else
+	{
+		printf("####msh fale7\n");
+	}
+
+
+
+	g_type_init();
+
+	NMClient * my_client = nm_client_new();
+
+	const GPtrArray * devices = nm_client_get_devices(my_client);
+	NMDevice * wifi_1;
+	NMDevice * wifi_2;
+	
+	NMConnection *connection;
+	NMSettingConnection *s_con;
+	NMSettingWireless *s_wireless;	
+	char *uuid;
+	
+	connection = nm_connection_new ();
+	
+	s_con = (NMSettingConnection *) nm_setting_connection_new ();
+	
+	uuid = nm_utils_uuid_generate ();
+	g_object_set (s_con,
+			  NM_SETTING_CONNECTION_TYPE, NM_SETTING_WIRELESS_SETTING_NAME,
+			  NM_SETTING_CONNECTION_UUID, uuid,
+			  NULL);
+	g_free (uuid);
+	g_object_set (G_OBJECT (s_con), NM_SETTING_CONNECTION_AUTOCONNECT, FALSE, NULL);
+	
+	nm_connection_add_setting (connection, (NMSetting *) s_con);	
+	
+	GByteArray * ssid = g_byte_array_new ();
+	
+	char*name;
+	char* present_network_name;
+
+	if(channel == 1)
+	{
+		name = "teetteet1";
+		present_network_name = "teetteet1char_";
+	}
+	else if (channel == 6)
+	{
+		name = "teetteet6";
+		present_network_name = "teetteet6char_";
+	}
+	else if (channel == 11)
+	{
+		name = "teetteet11";
+		present_network_name = "teetteet11har_";
+	}
+	
+	g_byte_array_append(ssid, (const guint8*)name,10);
+
+	s_wireless = (NMSettingWireless *) nm_setting_wireless_new ();
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_SSID, ssid, NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_MODE, "adhoc", NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_SEC, NULL, NULL);
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_BAND, "bg", NULL);
+///////////////////////////////////////////////////PARAMETER 2//////////////////////////////////
+	g_object_set (s_wireless, NM_SETTING_WIRELESS_CHANNEL, channel, NULL);
+////////////////////////////////////////////////////////////////////////////////////////////////
+	nm_connection_add_setting (connection, (NMSetting *) s_wireless);
+
+	NMSettingIP4Config *s_ip4;
+	s_ip4 = (NMSettingIP4Config *) nm_setting_ip4_config_new ();
+	g_object_set (s_ip4, NM_SETTING_IP4_CONFIG_METHOD, NM_SETTING_IP4_CONFIG_METHOD_SHARED, NULL);	
+	nm_connection_add_setting (connection, (NMSetting *) s_ip4);
+
+	NMSettingIP6Config *s_ip6;
+	s_ip6 = (NMSettingIP6Config *) nm_setting_ip6_config_new ();
+	g_object_set (s_ip6, NM_SETTING_IP6_CONFIG_METHOD, NM_SETTING_IP6_CONFIG_METHOD_IGNORE, NULL);	
+	nm_connection_add_setting (connection, (NMSetting *) s_ip6);
+	
+	
+*//*
+	char essid[0];
+	wrq.u.essid.flags = 0;
+	essid[0] = '\0';
+	wrq.u.essid.pointer = (caddr_t) essid;
+	wrq.u.essid.length = strlen(essid) ;
+	IW_SET_EXT_ERR(skfd, if_name, SIOCSIWESSID, &wrq, "Set ESSID");
+*//*
+	sleep(1);
+
+
+	int network_found = 0;
+
+	NMAccessPoint * connection_ap = NULL;
+
+
+
+
+	const GPtrArray * devices_connected = nm_client_get_devices(my_client);
+	int j;
+	for(j=0;j<devices_connected->len;j++)
+	{
+		if(strcmp (nm_device_get_iface((NMDevice *) g_ptr_array_index(devices_connected,j)),if_name)==0 )
+		{
+			wifi_1 =  (NMDevice *)g_ptr_array_index(devices_connected,j);
+			NMAccessPoint * currently_connected = nm_device_wifi_get_active_access_point((NMDeviceWifi *)wifi_1);
+			if(currently_connected!= NULL)
+			{
+				const GByteArray * current_ssid = nm_access_point_get_ssid(currently_connected);
+				printf("current ap name is: %s \n", (char *)current_ssid->data);
+				if(strcmp(present_network_name, (char *)current_ssid->data)==0)
+					return;
+			}
+
+		}
+	}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////we want to connect to a network and wait till an IP is acquired///////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////connect to the already created network/////////////////////////////////////////////
+	*//*for(j=0;j<devices_connected->len;j++)
+	{
+		if(strcmp (nm_device_get_iface((NMDevice *)g_ptr_array_index(devices_connected,j)),"wlan0")==0 )
+		{
+			wifi_2 = (NMDevice *)g_ptr_array_index(devices_connected,j);			
+			NMAccessPoint * currently_connected = nm_device_wifi_get_active_access_point((NMDeviceWifi * )wifi_2);
+			if(currently_connected!= NULL)
+			{
+				const GByteArray * current_ssid = nm_access_point_get_ssid(currently_connected);
+				printf("current ap name is: %s \n", (char *)current_ssid->data);
+				if(strcmp("teetteet11har_", (char *)current_ssid->data)==0)
+					connection_ap = nm_device_wifi_get_active_access_point ((NMDeviceWifi *)wifi_2);
+			}
+		}
+	}*//*
+
+	NMSettingIP4Config *s_ip4_3;
+	s_ip4_3 = (NMSettingIP4Config *) nm_setting_ip4_config_new ();
+	g_object_set (s_ip4_3, NM_SETTING_IP4_CONFIG_METHOD, NM_SETTING_IP4_CONFIG_METHOD_AUTO, NULL);	
+	nm_connection_add_setting (connection, (NMSetting *) s_ip4_3);
+
+	
+	printf("activating\n");
+
+
+	nm_client_add_and_activate_connection (my_client,
+						connection,
+						wifi_1,
+						//connection_ap ? nm_object_get_path (NM_OBJECT (connection_ap)) : NULL,
+						NULL,
+						NULL,
+						NULL);
+
+	char current_address [18];
+	do
+	{
+		sleep(1);
+		if(iw_get_ext(skfd, if_name, SIOCGIWAP, &wrq) >= 0)
+		{
+			unsigned char *u;
+			printf("####fale7\n");
+			u = (unsigned char *) &wrq.u.ap_addr.sa_data;	
+			n=sprintf (current_address, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X\0",u[0], u[1], u[2], u[3], u[4], u[5]);
+		}
+		else
+		{
+			printf("####msh fale7\n");
+		}
+		printf("%s starting\n",starting_address);
+		printf("%s null\n",null_address);
+		printf("%s current\n",current_address);
+
+	}while(strcmp(starting_address,current_address)==0 || strcmp(null_address,current_address)==0);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////wait till an ip is acquired/////////////////////////////////////////////
+
+	int socket_id;
+	struct ifreq ifr;
+	char * current_ip_address;
+	int dhcp_trials = 0;
+	do
+	{
+		socket_id = socket(AF_INET, SOCK_DGRAM, 0);
+
+		*//* I want to get an IPv4 IP address */
+		/*ifr.ifr_addr.sa_family = AF_INET;*/
+
+		/* I want IP address attached to "eth0" */
+		/*strncpy(ifr.ifr_name, if_name, IFNAMSIZ-1);
+
+		ioctl(socket_id, SIOCGIFADDR, &ifr);
+		
+		current_ip_address = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);	
+		if(current_ip_address==NULL) continue;
+		
+		printf("helloooooooooo IP %s\n", current_ip_address);
+		close(socket_id);
+		sleep(1);
+		
+		current_ip_address[5] = '\0';
+		if(dhcp_trials%5 == 0 && dhcp_trials>0 )
+		{
+			nm_client_activate_connection(my_client,
+						connection,
+						wifi_1,
+						//connection_ap ? nm_object_get_path (NM_OBJECT (connection_ap)) : NULL,
+						NULL,
+						NULL,
+						NULL);
+			printf("reactiviting .. \n");
+			sleep(1);		
+		}
+		dhcp_trials++;
+
+	}while(strcmp ("10.42",current_ip_address)!=0);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+*/
+//}
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(LaunchLockResponseHandler)
