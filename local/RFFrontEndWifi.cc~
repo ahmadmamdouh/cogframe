@@ -5,7 +5,9 @@
 #include <string.h>
 #include "iwlib.h"
 #include <unistd.h>
-class RFFrontEndWifi{ public:
+#include <elements/local/RfFrontEnd.hh>
+
+class RFFrontEndWifi: public RfFrontEnd{ public:
 
 RFFrontEndWifi() {
 }
@@ -15,7 +17,7 @@ RFFrontEndWifi() {
 
 void change_channel(String _if_name, uint8_t channel,String type) {
 	click_chatter("#####RFFRONTEND_CHANNELCHANGE#####");
-	printf("Channel_Switching %s %d\n",_if_name, channel);
+	printf("Channel_Switching %s %d\n",_if_name.c_str(), channel);
 	char* if_name = _if_name.c_str();
 	char buffer [3000]; // buffer for system calls.
 	int n;
@@ -25,7 +27,7 @@ void change_channel(String _if_name, uint8_t channel,String type) {
 	printf("sudo ifconfig %s down\n",if_name);
 	n = sprintf (buffer, "sudo ifconfig %s down\0",if_name);
 	n = system(buffer);
-	printf("Netword_Creation\n");
+	printf("Netword_Creation %s %d\n",_if_name, channel);
 	printf("sudo iwconfig %s mode Ad-Hoc channel %d\n",if_name,channel);
 	n = sprintf (buffer, "sudo iwconfig %s mode Ad-Hoc channel %d\0",if_name,channel);
 	n = system(buffer);

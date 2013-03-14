@@ -50,7 +50,7 @@ private:
 
 		//My ethernet addresses
 		cin >> numberofAddresses;
-		printf("Num Addresses: %d\n",numberofAddresses);
+
 		for (int e = 0; e < numberofAddresses; e++) {
 			string address = "...", IP = "..";
 			cin >> address >> IP;

@@ -1,6 +1,6 @@
 #include <click/config.h>
 #include <elements/local/SpectrumManager.hh>
-#include <elements/local/RFFrontEndWifi.hh>
+#include <elements/local/RfFrontEndFactory.cc>
 #include <click/args.hh>
 #include <clicknet/ether.h>
 #include <click/error.hh>
@@ -30,8 +30,12 @@ SpectrumManager::configure(Vector<String> &conf, ErrorHandler * errh)
 		.read_mp("if_name", if_name) // interface name that will switch the channel.
 		.read_mp("offset", offset)   // offset in user_anno_u8 where channel number is located.
 		.read_mp("type", type)   // type: T: transmitter or R: reciever
+		.read_mp("rftype", rfType)   // type: T: transmitter or R: reciever
 	      .complete() < 0)
 	      return -1;
+	      
+	     RfFrontEndFactory rfFactory;
+	     rf = rfFactory.getRfFrontEnd(rfType);
 	return 0;
 }
 

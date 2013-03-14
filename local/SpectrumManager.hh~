@@ -6,7 +6,7 @@
 #include<stdlib.h>
 #include <string.h>
 #include <elements/userlevel/todevice.hh>
-
+#include <elements/local/RfFrontEnd.hh>
 
 CLICK_DECLS
 
@@ -17,13 +17,13 @@ CLICK_DECLS
  *
  */
 
-class WifiSpectrumManager : public Element { 
+class SpectrumManager : public Element { 
 public:
 
-  WifiSpectrumManager();
-  ~WifiSpectrumManager();
+  SpectrumManager();
+  ~SpectrumManager();
 
-  const char *class_name() const		{ return "WifiSpectrumManager"; }
+  const char *class_name() const		{ return "SpectrumManager"; }
 	const char *port_count() const		{ return PORTS_1_1; }
 	const char *processing() const		{ return AGNOSTIC; }
 
@@ -35,6 +35,8 @@ public:
 	String if_name;
 	uint8_t offset;
 	String type;
+	String rfType;
+	RfFrontEnd* Rf;
 
 
 };

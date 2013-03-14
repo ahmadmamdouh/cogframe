@@ -1,0 +1,12 @@
+#ifndef RFFRONTEND_HH
+#define RFFRONTEND_HH
+#include<stdio.h>
+#include<stdlib.h>
+#include <string.h>
+#include "iwlib.h"
+#include <unistd.h>
+class RfFrontEnd{public:
+	virtual void change_channel(String, uint8_t,String){};
+	virtual void scan(String){};
+};
+#endif

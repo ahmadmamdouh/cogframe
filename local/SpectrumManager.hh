@@ -6,7 +6,7 @@
 #include<stdlib.h>
 #include <string.h>
 #include <elements/userlevel/todevice.hh>
-
+#include <elements/local/RfFrontEnd.hh>
 
 CLICK_DECLS
 
@@ -24,7 +24,7 @@ public:
   ~SpectrumManager();
 
   const char *class_name() const		{ return "SpectrumManager"; }
-	const char *port_count() const		{ return PORTS_1_0; }
+	const char *port_count() const		{ return PORTS_1_1; }
 	const char *processing() const		{ return AGNOSTIC; }
 
   int configure(Vector<String> &, ErrorHandler *);
@@ -35,6 +35,8 @@ public:
 	String if_name;
 	uint8_t offset;
 	String type;
+	String rfType;
+	RfFrontEnd* rf;
 
 
 };
