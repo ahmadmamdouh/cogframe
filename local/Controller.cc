@@ -1,10 +1,12 @@
 #include <elements/local/ISSensor.cc>
 #include <elements/local/IMobilityManager.cc>
 #include <elements/local/TopologyManager.cc>
+#include <elements/local/Channel.hh>
 #include <iostream>
 #include <stdio.h>
 #include <vector>
 #include <fstream>
+#include <map>
 
 #ifndef _CONTROLLER
 #define _CONTROLLER
@@ -18,6 +20,7 @@ private:
 	ISSensor sSensor;
 	IMobilityManager mobilityManager;
 	TopologyManager TManager;
+	map<int, struct Channel> channels;
 
 	int identifierType(string identifier){
 		if(macToIP.count(identifier))return 1;//MAC.
@@ -73,26 +76,25 @@ private:
 		sSensor = ISSensor();
 		string ip;
 		int numberOfChannels;
-		vector<int> channels;
-		vector<int> probabilites;
 
 		cin >> numberOfChannels;
 
 		for (int c = 0; c < numberOfChannels; c++) {
-			int channel = 0, probability = 0;
+			int channel = 0;
+			int probability = 0; // Change to float 
 			cin >> channel >> probability;
-
-			channels.push_back(channel);
-			probabilites.push_back(probability);
+			struct Channel ch(channel, probability, false);
+			channels[channel] = ch;
 		}
 	
 		
 		for(set<string>::iterator myIterator = TManager.my_addresses.begin();
 		    myIterator != TManager.my_addresses.end();
 		    myIterator++){
-			sSensor.insert_route_entry(*myIterator, channels[0], probabilites[0], channels[1], probabilites[1], channels[2], probabilites[2]);
+		    
+			sSensor.insert_route_entry(*myIterator, channels[1].id, channels[1].pu_prob, channels[6].id, channels[6].pu_prob, channels[11].id, channels[11].pu_prob);
 		}
-		printf("My channels: %s, %d: %d, %d: %d, %d %d\n", ip.c_str(), channels[0], probabilites[0], channels[1], probabilites[1], channels[2], probabilites[2]);
+//		printf("My channels: %s, %d: %d, %d: %d, %d %d\n", ip.c_str(), channels[0], probabilites[0], channels[1], probabilites[1], channels[2], probabilites[2]);
 
 		//My location
 		string my_lat = "..", my_long = "..";
@@ -169,9 +171,11 @@ private:
 			
 			TManager.update_PUs(address);
 		}
+		
 		printf("Controller ended parsing the module file\n");
 	}
-        void operator=(Controller const&); // Don't implement
+	
+  void operator=(Controller const&); // Don't implement
 	
 public:
 	static Controller& getInstance(){
@@ -200,14 +204,39 @@ public:
 	bool is_neighbor(uint8_t *eth) {
 		return TManager.is_neighbor(eth);
 	}
+	
 	bool is_me(uint8_t *eth) {
 		return TManager.is_me(eth);
 	}
+	
 	bool is_PU(uint8_t *eth) {
 		return TManager.is_PU(eth);
 	}
+	
 	string getAddress(){
 		return TManager.getAddress();
+	}
+	
+	// Channel Interaction
+	
+	void set_pu_active(int id) {
+		channels[id].pu_active = true;
+	}
+	
+	void set_pu_inactive(int id) {
+		channels[id].pu_active = false;
+	}
+	
+	void set_pu_prob(int id, float prob) {
+	  channels[id].pu_prob = prob;
+	}
+	
+	bool is_pu_active(int id) {
+		return channels[id].pu_active;
+	}
+	
+	float get_pu_prob(int id) {
+		return channels[id].pu_prob;
 	}
 	
 	
