@@ -265,8 +265,6 @@ LaunchRouter::insert_route(const IPAddress &nip,
 	printf("Inserting\n");
 	RouteEntry r(nip, nlat, nlong, ne, chls_size, chls_id, chls_pu_prob, swt);
 	_rtes.insert(nip, r);
-	//RouteEntry* temp = _rtes.findp(nip);
-	//printf("======= PROBS: %f %f %f\n");
 }
 
 void
