@@ -42,7 +42,7 @@ LaunchLockRequester::send_lock_request(uint8_t channel, IPAddress destination_ip
 		struct launch_ctrl_hdr * format = (struct launch_ctrl_hdr *) packet->data();
 	
 	format->type = launch_ctrl_hdr::LAUNCH_LOCK_REQ;
-	format->channel = channel;
+	format->channel_used = channel;
 	format->dst_ip =destination_ip;
 	//Push Ethernet header
 	 struct click_ether ethh;

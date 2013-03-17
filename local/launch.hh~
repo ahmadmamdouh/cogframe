@@ -3,7 +3,10 @@
 #include <click/glue.hh>
 #include <click/string.hh>
 #include <click/ipaddress.hh>
+#include <vector>
+#include <elements/local/Channel.hh>
 
+using namespace std;
 
 struct launch_ctrl_hdr
 {
@@ -20,14 +23,12 @@ struct launch_ctrl_hdr
 	uint32_t my_lat;			// Sender's Latitude.
 	uint32_t my_long;			// Sender's Longitude.
 	
-	uint8_t channel;
-	uint32_t pu_behavior;
-	uint8_t channel1;
-	uint32_t pu_behavior1;
-	uint8_t channel2;
-	uint32_t pu_behavior2;
-
-
+	vector<uint8_t> channels_id;
+	vector<float> channels_pu_prob;
+	
+	float channels_pu_prob[11];
+	
+	uint8_t channel_used;
 
 	uint32_t switching_time;
 

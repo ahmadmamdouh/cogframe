@@ -56,11 +56,6 @@ class LaunchLockResponder : public Element { public:
 //Timer of the lock	
 	Timer _lock_timeout_timer;
 
-
-//PU behavior of the three candidates channels
-	double _pu_behavior0;
-	double _pu_behavior1;
-	double _pu_behavior2;
 	FromDevice * _from_dev;
 
 	LaunchRTRSender * _rtr_sender;

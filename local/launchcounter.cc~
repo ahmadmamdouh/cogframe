@@ -26,6 +26,7 @@ LaunchCounter::simple_action(Packet *p)
 	Timestamp* ts = (Timestamp *)(p->data()+20);
 	click_chatter("Packet Time:: %f", ts->doubleval());
 	click_chatter("NOW:: %f", Timestamp::now().doubleval());
+	click_chatter("teet");
         _usec_accum += Timestamp::now().doubleval() - ts->doubleval();
         _count++;
 	click_chatter("Counter:: %d", _count);

@@ -26,41 +26,26 @@ LaunchCtrlResponder::configure(Vector<String> &conf, ErrorHandler * errh)
 		.read_mp("ETH", _my_eth)
 		.read_mp("IP", lch.neighbor_ip)
 		.read_mp("LONG", lch.my_long)
-      		.read_mp("LAT", lch.my_lat)
+    		.read_mp("LAT", lch.my_lat)
 		.read_mp("TSWTCH", lch.switching_time)
-		.read_mp("CH0", _pu_behavior0)
-		.read_mp("CH1", _pu_behavior1)
-		.read_mp("CH2", _pu_behavior2)
 		.complete() < 0)
       return -1;
 		
 	Controller controller = Controller::getInstance();
-	RouteEntry routeEntry = controller.get_sensed_Channel(controller.getAddress());
-	_pu_behavior0 = routeEntry.pu_behavior;
-	_pu_behavior1 = routeEntry.pu_behavior1;
-	_pu_behavior2 = routeEntry.pu_behavior2;
-		
+	map<int, struct Channel>  *channels = controller.get_sensed_Channel();
 	
 	lch.type =  launch_ctrl_hdr::LAUNCH_RES;
 	click_chatter("MY IP %s \n",lch.neighbor_ip.unparse().c_str());
+	
 	//A node responds with the best channel from three candidates 
 	//in terms of PU behaviour(1/(probability of the presence of PU))
+	for(map<int,struct Channel>::iterator it = (*channels).begin(); it !=(*channels).end(); it++) {
+		struct Channel c = it->second;
+		lch.channels_id[lch.channels_size] = c.id;
+		lch.channels_pu_prob[lch.channels_size] = c.pu_prob;
+		lch.channels_size++;
+	}
 
-	//if (_pu_behavior0 >= _pu_behavior1 && _pu_behavior0 >= _pu_behavior2)
-	{
-		lch.channel=1;
-		lch.pu_behavior = (uint32_t)(_pu_behavior0*100.0);
-	}
-	//else if (_pu_behavior1 >= _pu_behavior0 && _pu_behavior1 >= _pu_behavior2)
-	{
-		lch.channel1=6;
-		lch.pu_behavior1 = (uint32_t)(_pu_behavior1*100.0);
-	}
-	//else if (_pu_behavior2 >= _pu_behavior0 && _pu_behavior2 >= _pu_behavior1)
-	{
-		lch.channel2=11;
-		lch.pu_behavior2 = (uint32_t)(_pu_behavior2*100.0);
-	}
 	return 0;
 }
 
@@ -72,8 +57,6 @@ LaunchCtrlResponder::simple_action(Packet *p_in)
 {
  	 WritablePacket *p = p_in->uniqueify();
 
-
-  
   if (!p)
     return 0;
 
@@ -84,7 +67,6 @@ LaunchCtrlResponder::simple_action(Packet *p_in)
   memcpy(ethh->ether_shost, _my_eth.data(), 6);
 
   memcpy(p->data()+14, &lch, sizeof(lch));
-
 
   return p;
 }

@@ -20,7 +20,8 @@ private:
 	ISSensor sSensor;
 	IMobilityManager mobilityManager;
 	TopologyManager TManager;
-	map<int, struct Channel> channels;
+	map<int, struct Channel> *channels;
+	vector<int> *channels_id;
 
 	int identifierType(string identifier){
 		if(macToIP.count(identifier))return 1;//MAC.
@@ -33,6 +34,8 @@ private:
 		freopen("elements/local/ModuleFile.txt", "r", stdin);
 		//ifstream fin("ModuleFile.txt");		
 		printf("Controller started!!!!!!!!!\n");
+		channels = new map<int, struct Channel>();
+		channels_id = new vector<int>();
 
 		string mobility = "...", topology = "...";
 		int numberOfNodes = -1, numberOfEdges = 0, numberofAddresses = 0,
@@ -73,7 +76,6 @@ private:
 		}
 
 		//channels probabilities && Spectrum Sensing.
-		sSensor = ISSensor();
 		string ip;
 		int numberOfChannels;
 
@@ -81,19 +83,15 @@ private:
 
 		for (int c = 0; c < numberOfChannels; c++) {
 			int channel = 0;
-			int probability = 0; // Change to float 
+			float probability = 0; // Change to float 
 			cin >> channel >> probability;
+			printf("%d %f\n",channel, probability);
 			struct Channel ch(channel, probability, false);
-			channels[channel] = ch;
+			(*channels)[channel] = ch;
+			(*channels_id).push_back(channel);
 		}
 	
 		
-		for(set<string>::iterator myIterator = TManager.my_addresses.begin();
-		    myIterator != TManager.my_addresses.end();
-		    myIterator++){
-		    
-			sSensor.insert_route_entry(*myIterator, channels[1].id, channels[1].pu_prob, channels[6].id, channels[6].pu_prob, channels[11].id, channels[11].pu_prob);
-		}
 //		printf("My channels: %s, %d: %d, %d: %d, %d %d\n", ip.c_str(), channels[0], probabilites[0], channels[1], probabilites[1], channels[2], probabilites[2]);
 
 		//My location
@@ -193,12 +191,8 @@ public:
 		return mobilityManager.get_sensed_location(mac);
 	}
 
-	RouteEntry get_sensed_Channel(string identifier) {
-		printf("Retriving channel entry (Unknown identifier): %s\n", identifier.c_str());	
-		
-		int type = identifierType(identifier);
-		string mac = type == 1 ? identifier : ( type == 2 ? IPToMac[identifier] : 0);
-		return sSensor.get_Sensed_Channel(mac);
+	map<int, struct Channel>* get_sensed_Channel() {
+		return channels;
 	}
 
 	bool is_neighbor(uint8_t *eth) {
@@ -218,25 +212,28 @@ public:
 	}
 	
 	// Channel Interaction
-	
 	void set_pu_active(int id) {
-		channels[id].pu_active = true;
+		(*channels)[id].pu_active = true;
 	}
 	
 	void set_pu_inactive(int id) {
-		channels[id].pu_active = false;
+		(*channels)[id].pu_active = false;
 	}
 	
 	void set_pu_prob(int id, float prob) {
-	  channels[id].pu_prob = prob;
+	  (*channels)[id].pu_prob = prob;
 	}
 	
 	bool is_pu_active(int id) {
-		return channels[id].pu_active;
+		return (*channels)[id].pu_active;
 	}
 	
 	float get_pu_prob(int id) {
-		return channels[id].pu_prob;
+		return (*channels)[id].pu_prob;
+	}
+	
+	vector<int>* get_channels() {
+		return channels_id;
 	}
 	
 	

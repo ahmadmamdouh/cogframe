@@ -35,7 +35,7 @@ class LaunchLockResponder : public Element { public:
 	void add_handlers();
 	int configure(Vector<String> &, ErrorHandler *);
 	void run_timer(Timer *);
-	void LaunchLockResponder::change_channel(String _if_name,uint8_t channel);
+//	void LaunchLockResponder::change_channel(String _if_name,uint8_t channel);
 
 	Packet *simple_action(Packet *);
 	LaunchRouter * _router;
@@ -56,11 +56,6 @@ class LaunchLockResponder : public Element { public:
 //Timer of the lock	
 	Timer _lock_timeout_timer;
 
-
-//PU behavior of the three candidates channels
-	double _pu_behavior0;
-	double _pu_behavior1;
-	double _pu_behavior2;
 	FromDevice * _from_dev;
 
 	LaunchRTRSender * _rtr_sender;

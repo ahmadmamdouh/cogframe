@@ -17,8 +17,8 @@ class ISSensor
         Gets the strength of the channel specified by its number
 		;for more than three channels that would be good the 
 		parameters could be the node HW address to look it up in the table.
-   */
-   
+                                      
+                                                                              */
 	ISSensor(){}							
 
 };

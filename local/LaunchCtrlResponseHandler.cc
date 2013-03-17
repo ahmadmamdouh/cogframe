@@ -41,13 +41,10 @@ struct launch_ctrl_hdr * format = (struct launch_ctrl_hdr *) (p_in->data()+14);
 click_ether *ethh = p_in->ether_header();
 uint8_t source_address[6];
 memcpy(source_address, ethh->ether_shost, 6);
-
-
+printf("\n");
 //Packet should come here annotated with neighbor IP and ethernet address
-  _router->insert_route(format->neighbor_ip,format->my_lat, format->my_long, 
-	       source_address, 	format->channel, format->pu_behavior,format->channel1, format->pu_behavior1,format->channel2, format->pu_behavior2 , format->switching_time);
- 		
-	   
+  _router->insert_route(format->neighbor_ip, format->my_lat, format->my_long, source_address, format->channels_size, format->channels_id, format->channels_pu_prob, format->switching_time);
+		   printf("After\n");
 		   return 0;
 }
 

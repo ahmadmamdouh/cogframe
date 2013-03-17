@@ -23,13 +23,6 @@ LaunchRouter::LaunchRouter()
 	_ready_for_another_packet = true;
 	_rtr_received = false;
 	_already_has_lock = 0;
-
-	can_use_11= true;
-	can_use_6 = true;
-	can_use_1 = true;
-
-
-	
 }
 
 LaunchRouter::~LaunchRouter()
@@ -40,11 +33,9 @@ int
 LaunchRouter::configure(Vector<String> &conf, ErrorHandler * errh)
 {
 	//Initializing the controller module.
-	//Controller.initialize();
 	
 	if (Args(conf, this, errh)
-      .read_mp("ETH", _ether_address_eth)
-	  .read_mp("PU", _pu_behavior)
+     .read_mp("ETH", _ether_address_eth)
 	  .read_mp("RES_T", _repsonse_waiting_ms)
 	  .read_mp("LOCK_T", _lock_waiting_ms)
 	  .read_mp("RT_T", _routing_table_entry_ms)
@@ -53,12 +44,9 @@ LaunchRouter::configure(Vector<String> &conf, ErrorHandler * errh)
  	  .read_mp("LAUNCHRTRSENDER", reinterpret_cast<Element *&>(_rtr_sender))
 	  .complete() < 0)
       return -1;
-      
-      
-	//RouteEntry routeEntry = Controller.get_sensed_location(lch.neighbor_ip);
-	//_pu_behavior = routeEntry.pu_behavior;
-
+  
 	memcpy(_eth ,_ether_address_eth.data(),sizeof(_eth));
+	
 	return 0;
 }
 
@@ -93,7 +81,6 @@ LaunchRouter::simple_action(Packet *p_in)
 			RouteEntry current_best_neighbor = choose_bestneighbor(_dst_ip,_rtes);
 			IPAddress current_neighbor_ip  = current_best_neighbor.neighbor_ip;
 			click_chatter("neighbor IP %s \n", current_neighbor_ip.unparse().c_str());
-			click_chatter("neighbor IP 2%s \n", current_best_neighbor.neighbor_ip.unparse().c_str());
 			click_chatter("chose_best_neighbor");
 			if(current_neighbor_ip == locked_neighbor_ip)
 			{
@@ -117,7 +104,6 @@ LaunchRouter::simple_action(Packet *p_in)
 			RouteEntry current_best_neighbor = choose_bestneighbor(_dst_ip,_rtes);
 			IPAddress current_neighbor_ip  = current_best_neighbor.neighbor_ip;
 			click_chatter("neighbor IP %s \n", current_neighbor_ip.unparse().c_str());
-			click_chatter("neighbor IP 2%s \n", current_best_neighbor.neighbor_ip.unparse().c_str());
 			click_chatter("dddddddddddddddd$$$$$$$$$$ obtained best neighbor information");
 			_lock_requester->send_lock_request(current_best_neighbor.channel_used/*channel selected*/, current_best_neighbor.neighbor_ip/*lock distantion ip*/, current_best_neighbor.neighbor_eth/*lock distantion eth*/,_eth/*my ethernet*/);
 			_lock_waiting_timer.schedule_after_msec(_lock_waiting_ms);
@@ -164,8 +150,6 @@ LaunchRouter::use_responses()
 		click_chatter("neighbor IP 2%s \n", best_neighbor.neighbor_ip.unparse().c_str());
 		_lock_requester->send_lock_request(best_neighbor.channel_used/*channel selected*/, best_neighbor.neighbor_ip/*lock distantion ip*/, best_neighbor.neighbor_eth/*lock distantion eth*/,_eth);
 		_lock_waiting_timer.schedule_after_msec(_lock_waiting_ms);
-		
-		
 		
 	}
 	else
@@ -273,126 +257,40 @@ LaunchRouter::make_routetable_expire()
 void
 LaunchRouter::insert_route(const IPAddress &nip,
 	      uint32_t nlat, uint32_t nlong, 
-	       uint8_t * ne, 	uint8_t chl,
-	       	uint32_t pub,uint8_t chl1,
-	       	uint32_t pub1,uint8_t chl2,
-	       	uint32_t pub2, 	uint32_t swt)
+	       uint8_t * ne, int chls_size, uint8_t* chls_id, float* chls_pu_prob, uint32_t swt)
 {
+	printf("FUNCTION\n");
 	_routingtable_available = true;
 	_routing_table_entry_timer.reschedule_after_msec(_routing_table_entry_ms);
-	
-	
-	RouteEntry * temp = _rtes.findp(nip);
-	if(temp != NULL)
-	{
-  	
-		temp->neighbor_lat = nlat;
-		temp->neighbor_long = nlong;
-		temp->channel = chl;
-		temp->pu_behavior = pub;
-		temp->switching_time = swt;
-	}
-	else
-	{
-		
-		RouteEntry r(nip, nlat, nlong, ne, chl, pub, chl1, pub1, chl2, pub2, swt);
-		_rtes.insert(nip, r);
-	}
+	printf("Inserting\n");
+	RouteEntry r(nip, nlat, nlong, ne, chls_size, chls_id, chls_pu_prob, swt);
+	_rtes.insert(nip, r);
+	//RouteEntry* temp = _rtes.findp(nip);
+	//printf("======= PROBS: %f %f %f\n");
 }
-
-
-
-
 
 void
-LaunchRouter::update_route(const IPAddress &nip,uint8_t chl,uint32_t pub,uint8_t chl1, uint32_t pub1,uint8_t chl2, uint32_t pub2)
+LaunchRouter::update_route(const IPAddress &nip,int chls_size, uint8_t* chls_id, float* chls_pu_prob)
 {
 	RouteEntry* temp = _rtes.findp(nip);
-	printf("=-=-=-=-=-=-=-=-=-=- %d\n",chl);
-	temp->channel = chl;
-	temp->pu_behavior = pub;
-	
-	temp->channel1 = chl1;
-	temp->pu_behavior1 = pub1;
-	
-	temp->channel2 = chl2;
-	temp->pu_behavior2 = pub2; 
-}
-
-
-
-/*
-// Function to pick the best neighbor in terms of the launch metric
-RouteEntry 
-LaunchRouter::choose_bestneighbor(IPAddress _current_dst_addr)
-{
-
-	if(_rtes.findp(_current_dst_addr) != 0)
-	return _rtes.findp(_current_dst_addr);
-	
-	double last_metric = 10000;
-	uint8_t best_ip ;
-	double current_metric;
-	for (RTIter iter = _rtes.begin(); iter.live(); iter++) {
-		if(_current_dst_addr == iter.neighbor_ip)
-		{
-			best_ip = rte.neighbor_ip;
-			break;
-		}
-
-		RouteEntry rte = iter.value();
-
-		LocationEntry lentry =  _ltable.find(rte.neighbor_ip);
-
-		current_metric = calculate_metric(rte, lentry);
-		if(current_metric < last_metric)
-		{
-			last_metric = current_metric;
-			best_ip = rte.neighbor_ip;
-		}	
+	printf("UPDATING ROUTE\n");
+	for (int i = 0; i < chls_size; i++) {
+		int channel_id = chls_id[i];
+		map<int, struct Channel> *tempChannels = temp->channels;
+		(*tempChannels)[channel_id].pu_prob = chls_pu_prob[i];
 	}
-
-	return _rtes.findp(best_ip);
 }
-*/
+
 //Function to calculate the metric for certain neighbor in the table
 double 
 LaunchRouter::calculate_metric(RouteEntry r, LocationEntry l_dst, LocationEntry l_neighbor)
 {
 
-
-	//double distance_value = distance(((double)l.neighbor_lat/1000.00),((double)l.neighbor_long/1000.00),((double)r.neighbor_lat/1000.00), ((double)r.neighbor_long/1000.00),'M');
 	double distance_value = distance(((double)l_dst.neighbor_lat/1000.00),((double)l_dst.neighbor_long/1000.00),((double)l_neighbor.neighbor_lat/1000.00), ((double)l_neighbor.neighbor_long/1000.00),'M');
 
 	click_chatter("CALCULATING DISTANCE BETWEEN %s AND %s AND IT IS :: %f \n",r.neighbor_ip.unparse().c_str(),l_dst.identifier.c_str(),distance_value);
-	
-	double my_pu;
-	if(r.channel_used == 1)
-	{
-		my_pu = r.pu_behavior;
-	}
-	else if (r.channel_used == 6)
-	{
-		my_pu = r.pu_behavior1;
-	}
-	else if (r.channel_used == 11)
-	{
-		my_pu = r.pu_behavior2;
-	}
-	
-
-	printf("SWITCHING TIME %d - N PU %d - MY PU %f \n",r.switching_time, r.pu_behavior, _pu_behavior);
-
-
-
-
-
-
-
-
-//	printf("###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\nCALCULATING DISTANCE BETWEEN %s AND %s AND IT IS :: %f \n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n",r.neighbor_ip.unparse().c_str(),l.neighbor_ip.unparse().c_str(),distance_value);
-//	click_chatter("###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\nCALCULATING DISTANCE BETWEEN %s AND %s AND IT IS :: %f \n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n###########$$$$$$$$$$$$$$$$################$$$$$$$$$$############\n",r.neighbor_ip.unparse().c_str(),l.neighbor_ip.unparse().c_str(),distance_value);
-	return ((distance_value/(3*(10^6)))  + r.switching_time)/(1- r.pu_behavior*_pu_behavior);
+	printf("Switching Time equals to 1 : %d\n", r.switching_time);
+	return ((distance_value/(3*(10^6)))  + r.switching_time)/(1- (*(r.channels))[1].pu_prob*0.1);
 }
 
 
@@ -465,18 +363,8 @@ LaunchRouter::set_ready_for_another_packet_negative()
 void 
 LaunchRouter::cant_use_channel(int channel_number)
 {
-	switch(channel_number)
-	{
-		case 1:
-			can_use_1 =false;
-			break;
-		case 6:
-			can_use_6 =false;
-			break;
-		case 11:
-			can_use_11 =false;
-			break;
-	}
+	Controller controller = Controller::getInstance();
+	controller.set_pu_active(channel_number);
 	if(channel_used == channel_number)
 		set_channel_loc_negative();
 }

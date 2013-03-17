@@ -22,7 +22,7 @@ void change_channel(String _if_name, uint8_t channel,String type) {
 	char buffer [3000]; // buffer for system calls.
 	int n;
 	char name[30];
-	int hostID = (type[0]=='R')? 1 : 2;
+	int hostID = (type[0]=='R')? 23 : 24;
 	n = sprintf(name, "Adhoc_Channel_%d\0", channel);
 	printf("sudo ifconfig %s down\n",if_name);
 	n = sprintf (buffer, "sudo ifconfig %s down\0",if_name);
@@ -37,7 +37,6 @@ void change_channel(String _if_name, uint8_t channel,String type) {
 	printf("sudo iwconfig %s essid %s \n",if_name,name);
 	n = sprintf (buffer, "sudo iwconfig %s essid %s\0",if_name,name);
 	n = system(buffer);
-	hostID = 22;
 	printf("sudo ifconfig %s 192.168.%d.%d netmask 255.255.255.0\n",if_name,channel,hostID);
 	n = sprintf (buffer, "sudo ifconfig %s 192.168.%d.%d netmask 255.255.255.0\0",if_name,channel,hostID);
 	n = system(buffer);

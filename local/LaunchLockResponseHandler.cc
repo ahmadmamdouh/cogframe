@@ -78,14 +78,10 @@ LaunchLockResponseHandler::simple_action(Packet *p_in)
 		{
 			click_chatter("RESPONDING TO LOCK1.1");
 			_router->_already_has_lock = 1;
-			char buffer [3000];
-			int n;
 
-			printf("TAAANY############################\n");
-
-			ErrorHandler  teet;
-			_to_dev->initialize(&teet);
-			p_in->set_user_anno_u8(0,launch_hdr_ptr->channel);
+			ErrorHandler  errh;
+			_to_dev->initialize(&errh);
+			p_in->set_user_anno_u8(0,launch_hdr_ptr->channel_used);
 			_router->set_channel_loc_positive();
 			return p_in;
 		}
@@ -98,7 +94,7 @@ LaunchLockResponseHandler::simple_action(Packet *p_in)
 		click_chatter("RESPONDING TO LOCK2");
 		_router->_already_has_lock = 0;
 		_router->set_channel_loc_negative();
-		_router->update_route(launch_hdr_ptr->neighbor_ip, launch_hdr_ptr->channel, launch_hdr_ptr->pu_behavior,launch_hdr_ptr->channel1, launch_hdr_ptr->pu_behavior1,launch_hdr_ptr->channel2, launch_hdr_ptr->pu_behavior2);
+		_router->update_route(launch_hdr_ptr->neighbor_ip, launch_hdr_ptr->channels_size, launch_hdr_ptr->channels_id, launch_hdr_ptr->channels_pu_prob);
 		return p_in;
 	}
     return 0;

@@ -27,13 +27,8 @@ class LaunchCtrlResponder : public Element { public:
 
 	uint32_t _my_lat;			// Sender's Latitude.
         
-    uint32_t _my_long;			// Sender's Longitude.
+  uint32_t _my_long;			// Sender's Longitude.
 	
-	// PU behavior of the three candidates channels
-	double _pu_behavior0;
-	double _pu_behavior1;
-	double _pu_behavior2;
-
 	EtherAddress _my_eth;	
 	uint32_t switching_time;
 	

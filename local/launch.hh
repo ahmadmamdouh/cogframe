@@ -3,7 +3,12 @@
 #include <click/glue.hh>
 #include <click/string.hh>
 #include <click/ipaddress.hh>
+#include <vector>
+#include <elements/local/Channel.hh>
 
+#define MAX_CHANNELS 47
+
+using namespace std;
 
 struct launch_ctrl_hdr
 {
@@ -20,14 +25,12 @@ struct launch_ctrl_hdr
 	uint32_t my_lat;			// Sender's Latitude.
 	uint32_t my_long;			// Sender's Longitude.
 	
-	uint8_t channel;
-	uint32_t pu_behavior;
-	uint8_t channel1;
-	uint32_t pu_behavior1;
-	uint8_t channel2;
-	uint32_t pu_behavior2;
-
-
+	uint8_t channels_id[MAX_CHANNELS];
+	float channels_pu_prob[MAX_CHANNELS];
+	
+	int channels_size;
+	
+	uint8_t channel_used;
 
 	uint32_t switching_time;
 
