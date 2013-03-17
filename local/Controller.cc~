@@ -85,7 +85,7 @@ private:
 			int channel = 0;
 			float probability = 0; // Change to float 
 			cin >> channel >> probability;
-			printf("%d %d\n",channel, probability);
+			printf("%d %f\n",channel, probability);
 			struct Channel ch(channel, probability, false);
 			(*channels)[channel] = ch;
 			(*channels_id).push_back(channel);

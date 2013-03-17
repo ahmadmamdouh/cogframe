@@ -83,7 +83,7 @@ private:
 
 		for (int c = 0; c < numberOfChannels; c++) {
 			int channel = 0;
-			float probability = 0; // Change to float 
+			float probability = 0; 
 			cin >> channel >> probability;
 			printf("%d %f\n",channel, probability);
 			struct Channel ch(channel, probability, false);
@@ -91,9 +91,6 @@ private:
 			(*channels_id).push_back(channel);
 		}
 	
-		
-//		printf("My channels: %s, %d: %d, %d: %d, %d %d\n", ip.c_str(), channels[0], probabilites[0], channels[1], probabilites[1], channels[2], probabilites[2]);
-
 		//My location
 		string my_lat = "..", my_long = "..";
 		cin >> my_lat >> my_long; //Do Nothing
@@ -235,7 +232,6 @@ public:
 	vector<int>* get_channels() {
 		return channels_id;
 	}
-	
 	
 };
 
