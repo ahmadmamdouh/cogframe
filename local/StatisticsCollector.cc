@@ -24,7 +24,7 @@ int
 StatisticsCollector::configure(Vector<String> &conf, ErrorHandler * errh)
 {
 	if (Args(conf, this, errh)
-		.read_mp("type", type) // interface name that will switch the channel.
+		.read_mp("type", type) 
 	    .complete() < 0)
 	      return -1;
 	count = 0;
@@ -46,11 +46,8 @@ StatisticsCollector::simple_action(Packet *p_in)
 	//printf("Elapsed time: %lld milliseconds\n", mtime);
 	long timestamp = mtime;
 	printf("\nCopy!!\n");
-	uint32_t id = p_in->anno_u32(0);
-//	memcpy(&id, p_in->data()+34 , sizeof(id)); // get id after 24 bytes
-//	WritablePacket * p = p_in->uniqueify();
-//	idp = (int*)(p->data() + 34);
-//	int id = *idp;
+	uint32_t id;
+		memcpy(&id, p_in->data()+50, sizeof(id));
 	printf("Done Copy!!: %d\n",id);
 	// Sent packets handling
 	if(type == "S") {
