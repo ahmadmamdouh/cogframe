@@ -288,7 +288,7 @@ LaunchRouter::calculate_metric(RouteEntry r, LocationEntry l_dst, LocationEntry 
 
 	click_chatter("CALCULATING DISTANCE BETWEEN %s AND %s AND IT IS :: %f \n",r.neighbor_ip.unparse().c_str(),l_dst.identifier.c_str(),distance_value);
 	printf("Switching Time equals to 1 : %d\n", r.switching_time);
-	return ((distance_value/(3*(10^6)))  + r.switching_time)/(1- (*(r.channels))[1].pu_prob*0.1);
+	return ((distance_value/(3*(10^6)))  + r.switching_time)/(1- (*(r.channels))[1].pu_prob/100);
 }
 
 

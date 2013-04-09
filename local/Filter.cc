@@ -21,6 +21,7 @@ Filter::~Filter() {
 Packet *
 Filter::simple_action(Packet *p_in) {
 //64   31   50    4   93 e4
+
 	WritablePacket * p = p_in->uniqueify();
 	click_ether *ethh = p_in->ether_header();
 	uint8_t source_address[6];
@@ -35,9 +36,10 @@ Filter::simple_action(Packet *p_in) {
 			return p_in;
 		}else if(Controller::getInstance().is_PU(source_address)){
 			printf("\n PU detecteddddddddddddddddddddddd \n");
-			return p_in;
+			output(0).push(p_in);
 		}
 	}
+		
 	
 	printf("\n Didn't pass \n");
 	return 0;

@@ -173,7 +173,7 @@ LaunchLockResponder::pu_sensed(const String &s, Element *e, void *, ErrorHandler
 		format->channels_pu_prob[i] = controller.get_pu_prob(channel_id);
 	}
 
-//	printf("SENDING PU BEHAVIORS %d %d %d \n", format->pu_behavior, format->pu_behavior1, format->pu_behavior2);
+	//printf("SENDING PU BEHAVIORS %d %d %d \n", format->pu_behavior, format->pu_behavior1, format->pu_behavior2);
 	//format->lock_response = 0;	
 	//Push Ethernet header
 	struct click_ether ethh;

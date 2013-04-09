@@ -7,6 +7,8 @@
 #define _MOBILITY
 
 using namespace std;
+
+class EtherAddress;
                                                                               
 class LocationEntry {
 
@@ -15,7 +17,7 @@ public:
 
 	uint32_t neighbor_lat;			// Sender's Latitude.
 	uint32_t neighbor_long;			// Sender's Longitude.
-	class EtherAddress   neighbor_eth; // hardware address of next hop
+	EtherAddress*   neighbor_eth; // hardware address of next hop
 
 	LocationEntry(const string &nidentifier,
 		  uint32_t nlat, uint32_t nlong) :

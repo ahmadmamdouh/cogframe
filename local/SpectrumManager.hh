@@ -2,8 +2,8 @@
 #define CLICK_SPECTRUMMANAGER_HH
 #include <click/element.hh>
 #include <click/glue.hh>
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <elements/userlevel/todevice.hh>
 #include <elements/local/RfFrontEnd.hh>
@@ -36,6 +36,7 @@ public:
 	uint8_t offset;
 	String type;
 	String rfType;
+	int _currentChannel;
 	RfFrontEnd* rf;
 
 

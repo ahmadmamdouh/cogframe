@@ -7,9 +7,12 @@
 #include <vector>
 #include <fstream>
 #include <map>
+#include <elements/local/StatsSentEntry.hh>
+#include <elements/local/StatsTimeEntry.hh>
+#include <elements/local/StatsReceivedEntry.hh>
 
-#ifndef _CONTROLLER
-#define _CONTROLLER
+#ifndef _CONTROLLER_CC
+#define _CONTROLLER_CC
 
 using namespace std;
 
@@ -22,6 +25,9 @@ private:
 	TopologyManager TManager;
 	map<int, struct Channel> *channels;
 	vector<int> *channels_id;
+	vector<struct StatsSentEntry> sentTable;
+	vector<struct StatsTimeEntry> switchTable;
+	vector<struct StatsReceivedEntry> receivedTable;
 
 	int identifierType(string identifier){
 		if(macToIP.count(identifier))return 1;//MAC.
@@ -208,6 +214,56 @@ public:
 		return TManager.getAddress();
 	}
 	
+	vector <struct StatsSentEntry> getSentTable() {
+		return sentTable;
+	}	
+
+	void addToSwitchTable(string ifName, long timestamp, long switchTime, int fromChannel, int toChannel){
+		struct StatsTimeEntry ste(ifName, timestamp, switchTime, fromChannel, toChannel);
+		switchTable.push_back(ste);
+	}
+	
+	void addToReceivedTable(uint32_t id, long timestamp) {
+		struct StatsReceivedEntry sre(id, timestamp);
+		receivedTable.push_back(sre);
+	}
+	
+	void addToSentTable(uint32_t id, long timestamp, string to_mac) {
+		struct StatsSentEntry sse(id, timestamp, to_mac);
+		printf("Insert in table\n");
+		sentTable.push_back(sse);
+		printf("Size of table: %d",sentTable.size());
+	}
+	void printStatsFile() {
+		ofstream myfile;
+		myfile.open("stats.txt"); //stats_name_role
+		//myfile << "Name"<<endl;
+		//myfile << "Role"<<endl;
+		myfile<<sentTable.size()<<endl;
+		for (int i = 0; i < sentTable.size(); ++i) {
+			struct StatsSentEntry sse = sentTable[i];
+			printf("------------------------->>>> SENT TABLE\n");
+			myfile << sse.id << " "<< sse.timestamp << " " << sse.to_mac << endl;
+		}
+		
+		// dump recieved packets table entries
+		myfile<<receivedTable.size()<<endl;
+		for (int i = 0; i < receivedTable.size(); ++i) {
+			struct StatsReceivedEntry sre = receivedTable[i];
+			printf("------------------------->>>> SENT TABLE\n");
+			myfile << sre.id << " "<< sre.timestamp << endl;
+		}
+		
+		// dump switching time table entries
+		myfile<<switchTable.size()<<endl;
+		for (int i = 0; i < switchTable.size(); ++i) {
+			struct StatsTimeEntry ste = switchTable[i];
+			myfile << ste.ifName << " "<< ste.timestamp << " " <<ste.switchTime << " " <<  ste.fromChannel <<" "<<ste.toChannel << endl;
+		}
+		myfile.close();
+	}
+	
+		
 	// Channel Interaction
 	void set_pu_active(int id) {
 		(*channels)[id].pu_active = true;
