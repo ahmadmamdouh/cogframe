@@ -21,26 +21,27 @@ PuController::~PuController() {
 struct Thread_args{
 	ProbabilisticDistribution *active, *inactive;
 	int *can_send;
+	int *time_to_live;
 };
 
 void *print_message(void *arg){
 		struct Thread_args *args = (struct Thread_args *)arg;
 		int *can_send = args->can_send;
+		int *time_to_live = args->time_to_live;
 		
 		while(true){
     		printf("Threading\n");
     		
     		*can_send = 1 - *can_send;
     		
-    		int time;
     		if(*can_send == 0) {
-    			time = args->inactive->getTime();
-    		} else{
-    			time = args->active->getTime();
+    			*time_to_live = args->inactive->getTime();
+    		} else {
+    			*time_to_live = args->active->getTime();
     		}
     		
-    		printf("Time to sleep: %d\n", time);
-    		sleep(time);
+    		printf("Time to sleep: %d\n", *time_to_live);
+    		sleep(*time_to_live);
     }
 }
 
@@ -78,19 +79,19 @@ PuController::configure(Vector<String> &conf, ErrorHandler * errh)
 	ProbabilisticDistributionFactory factory;
 	ProbabilisticDistribution *active = factory.getDistribution(active_type, active_str);
 	ProbabilisticDistribution *inactive = factory.getDistribution(inactive_type, inactive_str);
+	time_to_live = -1;
 	
 	struct Thread_args *args = new Thread_args();
 	args->active = active;
 	args->inactive = inactive;
 	args->can_send = &can_send;
+	args->time_to_live = &time_to_live;
 
 	printf("value: %d, address: %d\n", can_send, &can_send);
-
+	
   pthread_t t1;
-  pthread_create(&t1, NULL, &print_message, (void *) args);	
-  
-
-	return 0;
+  pthread_create(&t1, NULL, &print_message, (void *) args);	  
+  return 0;
 }
 
 
@@ -98,6 +99,10 @@ PuController::configure(Vector<String> &conf, ErrorHandler * errh)
 
 Packet *
 PuController::simple_action(Packet *p_in) {
+  if (time_to_live != -1) { // annotate packet with time to live
+    memcpy(p_in->data()+22, &time_to_live, sizeof(time_to_live));
+  	time_to_live = -1;
+  }
   return can_send ? p_in : 0;
 }
 

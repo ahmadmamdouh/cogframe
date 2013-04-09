@@ -63,6 +63,7 @@ class LaunchLockResponder : public Element { public:
 
 // Handler for Primary User sensor
 	static int pu_sensed(const String &s, Element *e, void *, ErrorHandler *errh);
+	static int pu_unsensed(const String &s, Element *e, void *, ErrorHandler *errh);
 
 //The header of Launch control packet
 	struct launch_ctrl_hdr _lh;

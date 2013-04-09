@@ -26,6 +26,7 @@ public:
 	
 	private:
 	int can_send;
+	int time_to_live;
 	String _active, _inactive;
 
 };
