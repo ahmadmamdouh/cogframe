@@ -33,8 +33,7 @@ ExperimentEndChecker::simple_action(Packet *p)
 		_eeh->endExperiment();
 		 return 0;
 	}
-
-	p->set_anno_u32(0,count);
+	memcpy(p->data()+50,&count,sizeof(count));
 	count++;	
 	return p;
 }
