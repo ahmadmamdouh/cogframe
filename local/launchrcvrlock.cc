@@ -191,10 +191,88 @@ LaunchLockResponder::pu_sensed(const String &s, Element *e, void *, ErrorHandler
   return 0;
 }
 
+int
+LaunchLockResponder::pu_unsensed(const String &s, Element *e, void *, ErrorHandler *errh)
+{
+    LaunchLockResponder *llr = static_cast<LaunchLockResponder *>(e);
+	uint32_t channel_sensed = atoi(s.c_str());
+	printf("^_^_^_^_^_^_^ %d\n", channel_sensed);
+	
+	//this machine can no longer use the sensed channel
+	Controller controller = Controller::getInstance();
+	controller.set_pu_inactive(channel_sensed);
+	controller.set_pu_prob(channel_sensed, 0.1); // mo2akatan fa7t 9/4/2013
+	llr->_router->set_channel_loc_negative();   // <--------->-------<------------>
+	
+	if(llr->_locked_channel == channel_sensed) {	
+		llr->_locked_channel = 0;
+		llr->_lock_count = 0;
+	}
+
+	//neighbors shouldn't communicate with this machine on the sensed channel
+	//send LOCK_RES to update the state of the lock
+	struct launch_ctrl_hdr  _lh;
+	vector<int> *channel_ids = controller.get_channels();
+	_lh.channels_size = (*channel_ids).size();
+	int new_channel_id = -1;
+	float min_pu_prob = 1<<28;
+	for(int i=0;i<(*channel_ids).size();i++) {
+		int channel_id = (*channel_ids)[i];
+		float pu_prob = controller.get_pu_prob(channel_id);
+		if(!controller.is_pu_active(channel_id)){
+			if(pu_prob < min_pu_prob) {
+				min_pu_prob = pu_prob;
+				new_channel_id = channel_id;
+			}
+		}
+	}
+	
+	if(new_channel_id == -1){
+		printf("Can't find new channel\n");
+	}
+	_lh.channel_used = new_channel_id;
+	
+	WritablePacket *packet = Packet::make((void *)&_lh, sizeof(_lh));
+
+	if (packet == 0 ) {	
+		click_chatter( "cannot make packet!");
+		return 0;
+	} 
+	struct launch_ctrl_hdr * format = (struct launch_ctrl_hdr *) packet->data();
+
+	format->type = launch_ctrl_hdr::LAUNCH_LOCK_RES;
+	format->lock_response = 0;
+	format->neighbor_ip = llr->_ip;
+	printf("------------> Channels Size %d\n",format->channels_size);
+	for(int i = 0; i < format->channels_size; i++) {
+		uint8_t channel_id = (*channel_ids)[i];
+		printf("################    %d\n",channel_id);
+		format->channels_id[i] = channel_id;
+		format->channels_pu_prob[i] = controller.get_pu_prob(channel_id);
+	}
+
+	//printf("SENDING PU BEHAVIORS %d %d %d \n", format->pu_behavior, format->pu_behavior1, format->pu_behavior2);
+	//format->lock_response = 0;	
+	//Push Ethernet header
+	struct click_ether ethh;
+
+	memset(ethh.ether_dhost,0xff,6);
+
+	memcpy(ethh.ether_shost, llr->_my_eth.data(), 6);
+	ethh.ether_type = 0x0007;
+ 
+	WritablePacket *q = packet->push(14);
+	memcpy(q->data(), &ethh, 14);
+	q->set_user_anno_u8(0,new_channel_id);
+	llr->output(0).push(q);
+
+  return 0;
+}
 
 void
 LaunchLockResponder::add_handlers() {
     add_write_handler("pu_sensed", pu_sensed, 0);
+    add_write_handler("pu_unsensed", pu_unsensed, 0);
 }
 
 
