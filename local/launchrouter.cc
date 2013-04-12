@@ -276,7 +276,9 @@ LaunchRouter::update_route(const IPAddress &nip,int chls_size, uint8_t* chls_id,
 		int channel_id = chls_id[i];
 		map<int, struct Channel> *tempChannels = temp->channels;
 		(*tempChannels)[channel_id].pu_prob = chls_pu_prob[i];
+		printf("prob channel %d : %f\n",i,chls_pu_prob[i]);
 	}
+	printf(".................\n");
 }
 
 //Function to calculate the metric for certain neighbor in the table

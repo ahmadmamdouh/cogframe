@@ -4,6 +4,7 @@
 #include <click/confparse.hh>
 #include <elements/standard/timedsource.hh>
 #include <elements/local/StatPacketSender.hh>
+#include <elements/local/CogHeader.hh>
 #include <elements/local/Utilities.hh>
 #include <elements/local/Controller.cc>
 #include <click/handlercall.hh>
@@ -28,6 +29,7 @@ class ExperimentEndHandler : public Element { public:
 	int count,maxNumPackets;
 	TimedSource* ts;
 	String nodeType;
+	CogHeader _lh;
 };
 
 CLICK_ENDDECLS
