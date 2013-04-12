@@ -35,8 +35,11 @@ struct Thread_args{
 
 void *wait_till_PU_exit(void *arg){
 	struct Thread_args *args = (struct Thread_args *)arg;
+	printf("___________________________________________________TTL BEFORE SLEEP: %d\n",args->time_to_live);
 	sleep(args->time_to_live);
 	*(args->_count) = 0;
+	printf("___________________________________________________PU UNSENSED!!!!!!!!\n");
+	printf("___________________________________________________TTL AFTER SLEEP: %d\n",args->time_to_live);
 	HandlerCall::call_write("pu_unsensed 1",args->_llr, 0);
 }
 
@@ -45,17 +48,19 @@ Packet *
 PuCaller::simple_action(Packet *p_in)
 {
   if(_count == 0)	{
-    int time_to_live;
-    memcpy(&time_to_live, p_in->data()+22, sizeof(time_to_live));
-    struct Thread_args *args = new Thread_args();
-    args->time_to_live = time_to_live;
-    args->_count = &_count;
-    args->_llr = _llr;
-    pthread_t t1;
-    pthread_create(&t1, NULL, &wait_till_PU_exit, (void *) args);	  
-	printf("Primary_User_Appeared\n");
-	HandlerCall::call_write("pu_sensed 1",_llr, 0);
-	_count = 1;
+		uint8_t time_to_live;
+		printf("BEFORE MEMCPY %d\n",time_to_live);
+		memcpy(&time_to_live, p_in->data() + 50, sizeof(time_to_live));
+		printf("_________________________________________________TTL after memcpy: %d\n",time_to_live);
+		struct Thread_args *args = new Thread_args();
+		args->time_to_live = time_to_live;
+		args->_count = &_count;
+		args->_llr = _llr;
+		pthread_t t1;
+		pthread_create(&t1, NULL, &wait_till_PU_exit, (void *) args);	  	
+		printf("Primary_User_Appeared\n");
+		HandlerCall::call_write("pu_sensed 1",_llr, 0);
+		_count = 1;
   }
   return p_in;
 }
