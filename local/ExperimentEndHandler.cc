@@ -14,7 +14,7 @@ int
 ExperimentEndHandler::configure(Vector<String> &conf, ErrorHandler * errh)
 {
 	if (Args(conf, this, errh)
-		.read_mp("TimedSource", reinterpret_cast<Element *&>(ts)) // interface name that will switch the channel.
+		.read_mp("TimedSource", reinterpret_cast<Element *&>(ts)) 
 	    .complete() < 0)
 	      return -1;
 	count = 0;
@@ -30,12 +30,12 @@ ExperimentEndHandler::endExperiment(){
 	// call controller to print statistics file
 	Controller::getInstance().printStatsFile();
 	// broadcast to all nodes informing them that the exp has ended
-	int annotation = 9; // Interpreted as hexadecimal number // end of exp annotation
 	WritablePacket *packet = Packet::make((void *)&_lh, sizeof(_lh));
 	if (packet == 0 )
 		click_chatter( "cannot make packet!");
+		
 	struct CogHeader *format = (struct CogHeader*) packet->data();
-	format->type = 1; //exp ended
+	format->type = CogHeader::EndExperiment; //exp ended
 	uint8_t source_eth[6],dest_eth[6];
 	Utilities::convert_String_to_uint8_t(Controller::getInstance().getAddress(),source_eth);
 
@@ -45,7 +45,7 @@ ExperimentEndHandler::endExperiment(){
 	char bufferr[100];
 	sprintf(bufferr, "%0.2x:%0.2x:%0.2x:%0.2x:%0.2x:%0.2x\0", source_eth[0], source_eth[1],
 				source_eth[2], source_eth[3], source_eth[4], source_eth[5]);
-	printf("discover packet making %s\n",bufferr);
+	printf("end of experiment packet making %s\n",bufferr);
 	
 
 	

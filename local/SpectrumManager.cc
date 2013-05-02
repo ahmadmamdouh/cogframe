@@ -40,11 +40,9 @@ SpectrumManager::configure(Vector<String> &conf, ErrorHandler * errh)
 	     RfFrontEndFactory rfFactory;
 	     rf = rfFactory.getRfFrontEnd(rfType);
 	     _currentChannel = -1; // off/any 
+	     	     
 	return 0;
 }
-
-
-
 
 Packet *
 SpectrumManager::simple_action(Packet *p_in)
@@ -65,6 +63,7 @@ SpectrumManager::simple_action(Packet *p_in)
 	int toChannel = channel;
 	
 	//printf("Elapsed time: %lld milliseconds\n", mtime);
+	Controller::getInstance().setCurrentChannel(ifName,toChannel);
 	long timestamp = mtime;
 	rf->scan(if_name);
 	rf->change_channel(if_name, channel,type);
@@ -78,6 +77,7 @@ SpectrumManager::simple_action(Packet *p_in)
 	elapsedTime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
 	long switchTime = elapsedTime;
 	Controller::getInstance().addToSwitchTable(ifName,timestamp,switchTime,fromChannel,toChannel);
+	printf("average_switching_time %s %d\n",if_name.c_str(),switchTime);
    }
   return p_in;
 }

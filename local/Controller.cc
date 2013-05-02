@@ -9,8 +9,9 @@
 #include <map>
 #include <elements/local/StatsSentEntry.hh>
 #include <elements/local/StatsTimeEntry.hh>
+#include <elements/local/ProtocolEntry.hh>
 #include <elements/local/StatsReceivedEntry.hh>
-
+#include <elements/local/DiscoverNeighbors.hh>
 #ifndef _CONTROLLER_CC
 #define _CONTROLLER_CC
 
@@ -19,7 +20,8 @@ using namespace std;
 class Controller {
 private:
 	map<string, string> macToIP, IPToMac;
-
+	map<string, int> currentChannels;
+	DiscoverNeighbors * dn;
 	ISSensor sSensor;
 	IMobilityManager mobilityManager;
 	TopologyManager TManager;
@@ -28,7 +30,8 @@ private:
 	vector<struct StatsSentEntry> sentTable;
 	vector<struct StatsTimeEntry> switchTable;
 	vector<struct StatsReceivedEntry> receivedTable;
-
+	vector<struct ProtocolEntry> protocolTable;
+	map<string, vector< string > >  puActive;
 	int identifierType(string identifier){
 		if(macToIP.count(identifier))return 1;//MAC.
 		else if(IPToMac.count(identifier))return 2;//IP.
@@ -234,6 +237,41 @@ public:
 		sentTable.push_back(sse);
 		printf("Size of table: %d",sentTable.size());
 	}
+	
+	
+	void addToProtocolTable(string msg, long fromTimestamp, long toTimestamp, string from_mac, string to_mac){
+		struct ProtocolEntry pt(msg, fromTimestamp, toTimestamp, from_mac, to_mac);
+		protocolTable.push_back(pt);
+	}
+
+/*
+	void addToPUInactiveTable(string pumac, long timestamp, long ttl){
+			pair<long,long> p;
+			p = make_pair(timestamp, ttl);
+			if( puInactive.count(pumac)){
+				puInactive[pumac].push_back(p);
+			}else{
+				vector< pair<long, long> > v;
+				v.push_pack(p);
+				puInactive[pumac] = v;
+			}			
+	}
+	
+*/
+
+	void addToPUActiveTable(string pumac, long timestamp,int channel, long ttl){
+			char buffer[200];
+			sprintf (buffer, "%ld %d %ld",timestamp, channel, ttl);
+			string entry(buffer);
+			if( puActive.count(pumac)){
+				puActive[pumac].push_back(entry);
+			}else{
+				vector< string > v;
+				v.push_back(entry);
+				puActive[pumac] = v;
+			}			
+	}
+	
 	void printStatsFile() {
 		ofstream myfile;
 		myfile.open("stats.txt"); //stats_name_role
@@ -250,7 +288,7 @@ public:
 		myfile<<receivedTable.size()<<endl;
 		for (int i = 0; i < receivedTable.size(); ++i) {
 			struct StatsReceivedEntry sre = receivedTable[i];
-			printf("------------------------->>>> SENT TABLE\n");
+			printf("------------------------->>>> RECEIVED TABLE\n");
 			myfile << sre.id << " "<< sre.timestamp << endl;
 		}
 		
@@ -260,7 +298,25 @@ public:
 			struct StatsTimeEntry ste = switchTable[i];
 			myfile << ste.ifName << " "<< ste.timestamp << " " <<ste.switchTime << " " <<  ste.fromChannel <<" "<<ste.toChannel << endl;
 		}
+		
+		myfile<<protocolTable.size()<<endl;
+		for (int i = 0; i < protocolTable.size(); ++i) {
+			struct ProtocolEntry pt = protocolTable[i];
+			myfile << pt.msg << " " << pt.from_mac << " " << pt.to_mac << " "<< pt.fromTimestamp  << " "<< pt.toTimestamp << endl;
+		}
+		
+		myfile<< puActive.size() << endl;
+		map<string, vector<string > >::const_iterator activeItr;
+		for(activeItr = puActive.begin(); activeItr != puActive.end();++activeItr){
+			myfile<<(*activeItr).first << endl;
+			vector<string > activeVec = (*activeItr).second;
+			myfile<<activeVec.size() << endl;
+			for(int i = 0; i < activeVec.size(); ++i){
+				myfile<<activeVec[i]<< endl;
+			}
+		}
 		myfile.close();
+		
 	}
 	
 		
@@ -288,6 +344,31 @@ public:
 	vector<int>* get_channels() {
 		return channels_id;
 	}
+	void update_neighbors_ut8(uint8_t *eth){
+		 TManager.update_neighbors_ut8(eth);
+	}
+	int getAddress_ut8(uint8_t  source_eth [10][6])
+	{
+		return TManager.getAddress_ut8(source_eth);
+	}
+	
+	void setCurrentChannel(string ifName, int channel){
+			currentChannels[ifName] = channel;
+	}
+	
+	int getCurrentChannel(string ifName){
+		return currentChannels[ifName];
+	}
+	
+	void set_discoverneighbors(DiscoverNeighbors *const DN)
+	{
+		dn=DN;
+	}
+	void discover ()
+	{
+		dn->discover();
+	}
+	
 	
 };
 

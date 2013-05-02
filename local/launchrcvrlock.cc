@@ -199,11 +199,13 @@ LaunchLockResponder::pu_unsensed(const String &s, Element *e, void *, ErrorHandl
 	printf("^_^_^_^_^_^_^ %d\n", channel_sensed);
 	
 	//this machine can no longer use the sensed channel
-	Controller controller = Controller::getInstance();
-	controller.set_pu_inactive(channel_sensed);
-	controller.set_pu_prob(channel_sensed, 0.1); // mo2akatan fa7t 9/4/2013
-	llr->_router->set_channel_loc_negative();   // <--------->-------<------------>
+
+	Controller::getInstance().set_pu_inactive(channel_sensed);
+	Controller::getInstance().set_pu_prob(channel_sensed, 0.1); // mo2akatan fa7t 9/4/2013
+	llr->_router->set_channel_loc_negative();   // <--------->-------<------------>	
+	llr->_router->set_ready_for_another_packet_negative();
 	
+
 	if(llr->_locked_channel == channel_sensed) {	
 		llr->_locked_channel = 0;
 		llr->_lock_count = 0;
@@ -212,14 +214,15 @@ LaunchLockResponder::pu_unsensed(const String &s, Element *e, void *, ErrorHandl
 	//neighbors shouldn't communicate with this machine on the sensed channel
 	//send LOCK_RES to update the state of the lock
 	struct launch_ctrl_hdr  _lh;
-	vector<int> *channel_ids = controller.get_channels();
+
+	vector<int> *channel_ids = Controller::getInstance().get_channels();
 	_lh.channels_size = (*channel_ids).size();
 	int new_channel_id = -1;
 	float min_pu_prob = 1<<28;
 	for(int i=0;i<(*channel_ids).size();i++) {
 		int channel_id = (*channel_ids)[i];
-		float pu_prob = controller.get_pu_prob(channel_id);
-		if(!controller.is_pu_active(channel_id)){
+		float pu_prob = Controller::getInstance().get_pu_prob(channel_id);
+		if(!Controller::getInstance().is_pu_active(channel_id)){
 			if(pu_prob < min_pu_prob) {
 				min_pu_prob = pu_prob;
 				new_channel_id = channel_id;
@@ -248,7 +251,9 @@ LaunchLockResponder::pu_unsensed(const String &s, Element *e, void *, ErrorHandl
 		uint8_t channel_id = (*channel_ids)[i];
 		printf("################    %d\n",channel_id);
 		format->channels_id[i] = channel_id;
-		format->channels_pu_prob[i] = controller.get_pu_prob(channel_id);
+		if(Controller::getInstance().is_pu_active(channel_id))
+			Controller::getInstance().set_pu_prob(channel_id, 1);
+		format->channels_pu_prob[i] = Controller::getInstance().get_pu_prob(channel_id);
 	}
 
 	//printf("SENDING PU BEHAVIORS %d %d %d \n", format->pu_behavior, format->pu_behavior1, format->pu_behavior2);

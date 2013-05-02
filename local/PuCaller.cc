@@ -7,6 +7,8 @@
 #include <click/confparse.hh>
 #include <click/handlercall.hh>
 #include "iwlib.h"
+#include <elements/local/Controller.cc>
+#include <elements/local/Utilities.hh>
 CLICK_DECLS
 
 
@@ -40,7 +42,12 @@ void *wait_till_PU_exit(void *arg){
 	*(args->_count) = 0;
 	printf("___________________________________________________PU UNSENSED!!!!!!!!\n");
 	printf("___________________________________________________TTL AFTER SLEEP: %d\n",args->time_to_live);
-	HandlerCall::call_write("pu_unsensed 1",args->_llr, 0);
+//	int channel = Controller::getInstance().getCurrentChannel("wlan0");
+	int channel = 1;
+	printf("primary_user_inactive %d\n",channel);
+	char buffer[100];
+	int n = sprintf (buffer, "pu_unsensed %d\0",channel);
+	HandlerCall::call_write(buffer,args->_llr, 0);
 }
 
 
@@ -52,6 +59,17 @@ PuCaller::simple_action(Packet *p_in)
 		printf("BEFORE MEMCPY %d\n",time_to_live);
 		memcpy(&time_to_live, p_in->data() + 50, sizeof(time_to_live));
 		printf("_________________________________________________TTL after memcpy: %d\n",time_to_live);
+		struct timeval start;
+		long mtime, seconds, useconds;    
+		gettimeofday(&start, NULL);
+		seconds  = start.tv_sec; // seconds since epoch
+		useconds = start.tv_usec; // microSeconds since epoch
+		mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+		click_ether *ethh = p_in->ether_header();
+		uint8_t src_address[6];
+		memcpy(src_address, ethh->ether_shost, 6);
+		string pu_mac = Utilities::convert_uint8_to_string(src_address);
+		
 		struct Thread_args *args = new Thread_args();
 		args->time_to_live = time_to_live;
 		args->_count = &_count;
@@ -59,8 +77,15 @@ PuCaller::simple_action(Packet *p_in)
 		pthread_t t1;
 		pthread_create(&t1, NULL, &wait_till_PU_exit, (void *) args);	  	
 		printf("Primary_User_Appeared\n");
-		HandlerCall::call_write("pu_sensed 1",_llr, 0);
+	//	int channel = Controller::getInstance().getCurrentChannel();
+		int channel =1;
+		Controller::getInstance().addToPUActiveTable(pu_mac,mtime,channel,time_to_live);
+		printf("primary_user_active %d\n",channel);
+		char buffer[100];
+		int n = sprintf (buffer, "pu_sensed %d\0",channel);
+		HandlerCall::call_write(buffer,_llr, 0);
 		_count = 1;
+		
   }
   return p_in;
 }

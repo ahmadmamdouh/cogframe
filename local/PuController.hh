@@ -5,6 +5,8 @@
 #include<stdlib.h>
 #include <string.h>
 #include <elements/userlevel/todevice.hh>
+#include <elements/standard/timedsource.hh>
+#include <click/handlercall.hh>
 
 using namespace std;
 
@@ -19,12 +21,13 @@ public:
 
   const char *class_name() const		{ return "PuController"; }
 	const char *port_count() const		{ return PORTS_1_1; }
-	const char *processing() const		{ return AGNOSTIC; }
+	const char *processing() const		{ return AGNOSTIC; } 
 
   int configure(Vector<String> &, ErrorHandler *);
   Packet *simple_action(Packet *);
 	
 	private:
+	TimedSource* ts;
 	int can_send;
 	int time_to_live;
 	String _active, _inactive;

@@ -16,7 +16,6 @@ StatisticsPrinter::configure(Vector<String> &conf, ErrorHandler * errh)
 	if (Args(conf, this, errh)
 	    .complete() < 0)
 	      return -1;
-		      
 	return 0;
 }
 

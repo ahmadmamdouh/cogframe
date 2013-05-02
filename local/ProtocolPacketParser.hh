@@ -1,5 +1,5 @@
-#ifndef STATISTICSPRINTER_HH
-#define STATISTICSPRINTER_HH
+#ifndef ProtocolPacketParser_HH
+#define ProtocolPacketParser_HH
 #include <click/element.hh>
 #include <click/confparse.hh>
 #include <elements/local/Utilities.hh>
@@ -10,18 +10,21 @@
 CLICK_DECLS
 
 
-class StatisticsPrinter : public Element { public:
+class ProtocolPacketParser : public Element { public:
 
-    StatisticsPrinter(){}
-    ~StatisticsPrinter(){}
+    ProtocolPacketParser(){}
+    ~ProtocolPacketParser(){}
 
-    const char *class_name() const	{ return "StatisticsPrinter"; }
+    const char *class_name() const	{ return "ProtocolPacketParser"; }
     const char *port_count() const	{ return PORTS_1_1; }
     const char *processing() const	{ return AGNOSTIC; }
 
     int configure(Vector<String> &, ErrorHandler *);
 		Packet *simple_action(Packet *);
-	
+
+  private:
+  string msg;
+  String msgS;		
 };
 
 CLICK_ENDDECLS

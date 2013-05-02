@@ -30,7 +30,7 @@ public:
   int configure(Vector<String> &, ErrorHandler *);
   Packet *simple_action(Packet *);
  // void change_channel(String ,uint8_t );
-
+	int getCurrentChannel();
 	private:
 	String if_name;
 	uint8_t offset;
