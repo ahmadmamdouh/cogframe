@@ -36,15 +36,8 @@ Packet *
 StatisticsCollector::simple_action(Packet *p_in)
 {
 	// Calculating current timestamp milliseconds
-	struct timeval start;
-	long mtime, seconds, useconds;    
-	gettimeofday(&start, NULL);
-	seconds  = start.tv_sec; // seconds since epoch
-	useconds = start.tv_usec; // microSeconds since epoch
-	mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-	
-	//printf("Elapsed time: %lld milliseconds\n", mtime);
-	long timestamp = mtime;
+	long timestamp =  Utilities::getCurrentTime();
+	//printf("Elapsed time: %lld milliseconds\n", timestamp);
 	printf("\nCopy!!\n");
 	uint32_t id;
 	memcpy(&id, p_in->data()+50, sizeof(id));

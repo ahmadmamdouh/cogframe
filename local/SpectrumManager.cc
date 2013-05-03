@@ -51,32 +51,19 @@ SpectrumManager::simple_action(Packet *p_in)
    if(channel != 0)//if channel = 0 then there is no channel annotated in the packet, so skip
    { 
 	
-	struct timeval start;
-	long mtime, sseconds, suseconds;    
-	gettimeofday(&start, NULL);
-	sseconds  = start.tv_sec; // seconds since epoch
-	suseconds = start.tv_usec; // microSeconds since epoch
-	mtime = ((sseconds) * 1000 + suseconds/1000.0) + 0.5;
-		
 	string ifName = Utilities::convert_String_to_string(if_name);
 	int fromChannel = _currentChannel;
 	int toChannel = channel;
 	
 	//printf("Elapsed time: %lld milliseconds\n", mtime);
 	Controller::getInstance().setCurrentChannel(ifName,toChannel);
-	long timestamp = mtime;
 	rf->scan(if_name);
+	long start = Utilities::getCurrentTime();
 	rf->change_channel(if_name, channel,type);
 	_currentChannel = channel;
-
-	struct timeval end;
-	long elapsedTime, seconds, useconds;    
-	gettimeofday(&end, NULL);
-	seconds  = end.tv_sec - start.tv_sec; // seconds since epoch
-	useconds = end.tv_usec -start.tv_usec; // microSeconds since epoch
-	elapsedTime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-	long switchTime = elapsedTime;
-	Controller::getInstance().addToSwitchTable(ifName,timestamp,switchTime,fromChannel,toChannel);
+	long end = Utilities::getCurrentTime();
+	long switchTime = end - start;
+	Controller::getInstance().addToSwitchTable(ifName,start,switchTime,fromChannel,toChannel);
 	printf("average_switching_time %s %d\n",if_name.c_str(),switchTime);
    }
   return p_in;

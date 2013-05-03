@@ -59,12 +59,7 @@ PuCaller::simple_action(Packet *p_in)
 		printf("BEFORE MEMCPY %d\n",time_to_live);
 		memcpy(&time_to_live, p_in->data() + 50, sizeof(time_to_live));
 		printf("_________________________________________________TTL after memcpy: %d\n",time_to_live);
-		struct timeval start;
-		long mtime, seconds, useconds;    
-		gettimeofday(&start, NULL);
-		seconds  = start.tv_sec; // seconds since epoch
-		useconds = start.tv_usec; // microSeconds since epoch
-		mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+		long timestamp = Utilities::getCurrentTime();
 		click_ether *ethh = p_in->ether_header();
 		uint8_t src_address[6];
 		memcpy(src_address, ethh->ether_shost, 6);
@@ -79,7 +74,7 @@ PuCaller::simple_action(Packet *p_in)
 		printf("Primary_User_Appeared\n");
 	//	int channel = Controller::getInstance().getCurrentChannel();
 		int channel =1;
-		Controller::getInstance().addToPUActiveTable(pu_mac,mtime,channel,time_to_live);
+		Controller::getInstance().addToPUActiveTable(pu_mac,timestamp,channel,time_to_live);
 		printf("primary_user_active %d\n",channel);
 		char buffer[100];
 		int n = sprintf (buffer, "pu_sensed %d\0",channel);

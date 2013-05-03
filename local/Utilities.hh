@@ -49,6 +49,17 @@ class Utilities { public:
 		return string(c);
 	}
 	
+	static long getCurrentTime()
+	{
+		struct timeval start;
+		long mtime, seconds, useconds;    
+		gettimeofday(&start, NULL);
+		seconds  = start.tv_sec; // seconds since epoch
+		useconds = start.tv_usec; // microSeconds since epoch
+		mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+		return mtime;
+	}
+	
 };
 
 #endif

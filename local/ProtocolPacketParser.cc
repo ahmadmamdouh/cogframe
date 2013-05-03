@@ -24,19 +24,15 @@ ProtocolPacketParser::configure(Vector<String> &conf, ErrorHandler * errh)
 Packet *
 ProtocolPacketParser::simple_action(Packet *p)
 {
-	struct timeval start;
-	long mtime, seconds, useconds;    
-	gettimeofday(&start, NULL);
-	seconds  = start.tv_sec; // seconds since epoch
-	useconds = start.tv_usec; // microSeconds since epoch
-	mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+
+	long timestamp = Utilities::getCurrentTime();
 	long fromTimestamp = -1;
 	memcpy(&fromTimestamp, p->data() + 120, sizeof(fromTimestamp));
 	click_ether *ethh = p->ether_header();
 	uint8_t src_address[6];
 	memcpy(src_address, ethh->ether_shost, 6);
 	string from_mac = Utilities::convert_uint8_to_string(src_address);
-	Controller::getInstance().addToProtocolTable(msg, fromTimestamp, mtime,  from_mac,  Controller::getInstance().getAddress());
+	Controller::getInstance().addToProtocolTable(msg, fromTimestamp, timestamp,  from_mac,  Controller::getInstance().getAddress());
 	return p;	
 
 }

@@ -22,14 +22,9 @@ ProtocolPacketHandler::configure(Vector<String> &conf, ErrorHandler * errh)
 Packet *
 ProtocolPacketHandler::simple_action(Packet *p)
 {
-	struct timeval start;
-	long mtime, seconds, useconds;    
-	gettimeofday(&start, NULL);
-	seconds  = start.tv_sec; // seconds since epoch
-	useconds = start.tv_usec; // microSeconds since epoch
-	mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-	
-	memcpy(p->data() + 120, &mtime, sizeof(mtime));
+
+	long timestamp = Utilities::getCurrentTime();
+	memcpy(p->data() + 120, &timestamp, sizeof(timestamp));
 	return p;	
 }
 
