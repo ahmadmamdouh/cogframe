@@ -23,6 +23,7 @@ private:
 	map<string, int> currentChannels;
 	DiscoverNeighbors * dn;
 	ISSensor sSensor;
+	string name;
 	IMobilityManager mobilityManager;
 	TopologyManager TManager;
 	map<int, struct Channel> *channels;
@@ -51,7 +52,8 @@ private:
 				num_PUs = 0;
 
 		//Name and type
-		string name = "..", type = "...";
+		name = "..";
+		string type = "...";
 		cin >> name;
 		cin >> type;
 		printf("Node name: %s, type: %s\n", name.c_str(), type.c_str());		
@@ -216,7 +218,9 @@ public:
 	string getAddress(){
 		return TManager.getAddress();
 	}
-	
+	string getName(){
+		return name;
+	}
 	vector <struct StatsSentEntry> getSentTable() {
 		return sentTable;
 	}	
@@ -274,9 +278,14 @@ public:
 	
 	void printStatsFile() {
 		ofstream myfile;
-		myfile.open("stats.txt"); //stats_name_role
+		string filename;
+		char buffer[100];
+		sprintf(buffer, "stats_%s.txt\0",name.c_str());
+		filename = string(buffer);
+		myfile.open(filename.c_str()); //stats_name_role
 		//myfile << "Name"<<endl;
 		//myfile << "Role"<<endl;
+		myfile<< getAddress() <<endl;
 		myfile<<sentTable.size()<<endl;
 		for (int i = 0; i < sentTable.size(); ++i) {
 			struct StatsSentEntry sse = sentTable[i];
