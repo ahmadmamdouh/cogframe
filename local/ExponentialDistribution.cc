@@ -6,24 +6,30 @@ using namespace std;
 
 class ExponentialDistribution : public ProbabilisticDistribution { public:
 
-	double lambda;
+	private:
+		double lambda;
+		ExponentialDistribution(char* str) {
+			lambda = atof(str);
+		}
+
+	public:
 	
-	ExponentialDistribution() {
-	}
+		ExponentialDistribution() {
+		}
 	
-	ExponentialDistribution(char* str) {
-		lambda = atof(str);
-	}
 
-	~ExponentialDistribution() {
+		~ExponentialDistribution() {
 
-	}
+		}
 
-	double getTime() {
-			double p_x = rand() * lambda / RAND_MAX;
-			printf("Time generated: %f, log: %f\n", p_x, log(p_x));
-			
-			return (log(lambda) - log(p_x)) / lambda;
-	}
+		double getTime() {
+			double p_x = rand();
+			p_x /=RAND_MAX;
+			printf("%f\n", -log(1-p_x)/lambda);			
+			return -log(1-p_x)/lambda;
+		}
+		ProbabilisticDistribution* getInstance(char* str){
+			return new ExponentialDistribution(str);
+		}
 
 };

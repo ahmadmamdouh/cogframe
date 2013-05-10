@@ -3,6 +3,7 @@
 #include <click/config.h>
 #include <elements/local/PuController.hh>
 #include <elements/local/ProbabilisticDistributionFactory.cc>
+#include <elements/local/Utilities.hh>
 #include <click/args.hh>
 #include <clicknet/ether.h>
 #include <click/error.hh>
@@ -22,14 +23,12 @@ struct Thread_args{
 	ProbabilisticDistribution *active, *inactive;
 	int *can_send;
 	int *time_to_live;
-	TimedSource* ts;
 };
 
 void *print_message(void *arg){
 		struct Thread_args *args = (struct Thread_args *)arg;
 		int *can_send = args->can_send;
 		int *time_to_live = args->time_to_live;
-		TimedSource* ts = args->ts;
 		while(true){
     		printf("Threading\n");
     		
@@ -37,10 +36,8 @@ void *print_message(void *arg){
     		
     		if(*can_send == 0) {
     			*time_to_live = args->inactive->getTime();
-   				HandlerCall::call_write(ts,"active","false");
     		} else {
     			*time_to_live = args->active->getTime();
-					HandlerCall::call_write(ts,"active","true");
     		}
     		printf("Time to sleep: %d\n", *time_to_live);
     		sleep(*time_to_live);
@@ -55,12 +52,12 @@ PuController::configure(Vector<String> &conf, ErrorHandler * errh)
 	if (Args(conf, this, errh)
 	      .read("ACTIVE", _active)
 	      .read("INACTIVE", _inactive)	      	      
-				.read_mp("TimedSource", reinterpret_cast<Element *&>(ts))
 	      .complete() < 0)
 	      return -1;
 	      
 	can_send = 0;
-	      
+	pdl = ProbabilisticDistributionsLoader();
+	pdl.addDistributions();      
 	printf("ACTIVE: %s, INACTIVE: %s\n",_active.mutable_c_str(),_inactive.mutable_c_str()); 
 	char* active_str = _active.mutable_c_str();
 	char* inactive_str = _inactive.mutable_c_str();
@@ -79,9 +76,8 @@ PuController::configure(Vector<String> &conf, ErrorHandler * errh)
 	}
 	inactive_str++;
 	
-	ProbabilisticDistributionFactory factory;
-	ProbabilisticDistribution *active = factory.getDistribution(active_type, active_str);
-	ProbabilisticDistribution *inactive = factory.getDistribution(inactive_type, inactive_str);
+	ProbabilisticDistribution *active = ProbabilisticDistributionFactory::getInstance().getDistribution(Utilities::convert_String_to_string(active_type), active_str);
+	ProbabilisticDistribution *inactive = ProbabilisticDistributionFactory::getInstance().getDistribution(Utilities::convert_String_to_string(inactive_type), inactive_str);
 	time_to_live = -1;
 	
 	struct Thread_args *args = new Thread_args();
@@ -89,7 +85,6 @@ PuController::configure(Vector<String> &conf, ErrorHandler * errh)
 	args->inactive = inactive;
 	args->can_send = &can_send;
 	args->time_to_live = &time_to_live;
-	args->ts = ts;
 	printf("value: %d, address: %d\n", can_send, &can_send);
 	
   pthread_t t1;
@@ -104,8 +99,8 @@ PuController::simple_action(Packet *p_in) {
     memcpy(p_in->data()+50, &time_to_live, sizeof(time_to_live));
   	time_to_live = -1;
   }
-//  return can_send ? p_in : 0;
-	return p_in;
+  return can_send ? p_in : 0;
+//	return p_in;
 }
 
 CLICK_ENDDECLS

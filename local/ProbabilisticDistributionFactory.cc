@@ -1,29 +1,35 @@
-#include <elements/local/ExponentialDistribution.cc>
-#include <elements/local/UniformDistribution.cc>
+#ifndef PROBABILISTIC_DISTRIBUTION_FACTORY
+#define PROBABILISTIC_DISTRIBUTION_FACTORY
+#include <map>
+#include <iostream>
 #include <elements/local/ProbabilisticDistribution.hh>
-
-#define EXP "exp"
-#define UNIFORM "uniform"
-
-
+#include <stdio.h>
+using namespace std;
 class ProbabilisticDistributionFactory {
-	public:
-		
+
+	private:
 		ProbabilisticDistributionFactory() {
 		}
 		
 		~ProbabilisticDistributionFactory() {
 		}
+		void operator=(ProbabilisticDistributionFactory const&); // Don't implement
+		map <string, ProbabilisticDistribution*> probsDistributions;
+	public:			
+		static ProbabilisticDistributionFactory& getInstance(){
+			static ProbabilisticDistributionFactory instance;
+			return instance;
+		}
 		
-		ProbabilisticDistribution* getDistribution(String type, char* args){
+		ProbabilisticDistribution* getDistribution(string type, char* args){
 			ProbabilisticDistribution* p;
-			
-			if (type.equals(EXP, strlen(EXP)))
-				p = new ExponentialDistribution(args);
-				
-			else if (type.equals(UNIFORM, strlen(UNIFORM)))
-			  p = new UniformDistribution(args);
-			  
+			printf("%s %d\n",type.c_str(),probsDistributions.count(type));
+			p = probsDistributions[type]->getInstance(args);			  
 			return p;
 		}
+		
+		void addDistribution(string type, ProbabilisticDistribution* pd){
+			probsDistributions[type] = pd;
+		}
 };
+#endif;

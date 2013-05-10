@@ -12,6 +12,7 @@
 #include <elements/local/ProtocolEntry.hh>
 #include <elements/local/StatsReceivedEntry.hh>
 #include <elements/local/DiscoverNeighbors.hh>
+#include <elements/local/ProbabilisticDistributionsLoader.cc>
 #ifndef _CONTROLLER_CC
 #define _CONTROLLER_CC
 
@@ -32,6 +33,7 @@ private:
 	vector<struct StatsTimeEntry> switchTable;
 	vector<struct StatsReceivedEntry> receivedTable;
 	vector<struct ProtocolEntry> protocolTable;
+	ProbabilisticDistributionsLoader pdl;
 	map<string, vector< string > >  puActive;
 	int identifierType(string identifier){
 		if(macToIP.count(identifier))return 1;//MAC.
@@ -46,7 +48,8 @@ private:
 		printf("Controller started!!!!!!!!!\n");
 		channels = new map<int, struct Channel>();
 		channels_id = new vector<int>();
-
+		pdl = ProbabilisticDistributionsLoader();
+		pdl.addDistributions();
 		string mobility = "...", topology = "...";
 		int numberOfNodes = -1, numberOfEdges = 0, numberofAddresses = 0,
 				num_PUs = 0;

@@ -7,6 +7,7 @@
 #include <elements/userlevel/todevice.hh>
 #include <elements/standard/timedsource.hh>
 #include <click/handlercall.hh>
+#include <elements/local/ProbabilisticDistributionsLoader.cc>
 
 using namespace std;
 
@@ -31,6 +32,7 @@ public:
 	int can_send;
 	int time_to_live;
 	String _active, _inactive;
+	ProbabilisticDistributionsLoader pdl;
 
 };
 

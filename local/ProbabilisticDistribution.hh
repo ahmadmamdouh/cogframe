@@ -4,7 +4,7 @@
 class ProbabilisticDistribution { public:
 
 	virtual double getTime() {};
-	
+	virtual ProbabilisticDistribution* getInstance(char* args) = 0;	
 
 };
 
