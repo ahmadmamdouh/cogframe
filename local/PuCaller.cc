@@ -18,6 +18,47 @@ PuCaller::PuCaller() {
 PuCaller::~PuCaller() {
 }
 
+
+struct Pu_Thread_args{
+	LaunchLockResponder* _llr;
+};
+
+
+ void* run_pu_thread(void *arg) {
+		struct Pu_Thread_args *args = (struct Pu_Thread_args *)arg;
+		set<int> puChannels;
+		printf("Thread Started ----------------.....\n");
+		while(true) {
+			sleep(10);
+			printf("Looping!!!!!!\n");
+			//read PU.txt
+			freopen("elements/local/PU.txt", "r", stdin);
+			int noOfChannels;
+			cin >> noOfChannels;
+			int channel;
+			for(int i=0;i<noOfChannels;i++) {
+				cin >> channel;
+				printf("Channel seen: %d\n", channel);
+				if(!puChannels.count(channel)) {
+					puChannels.insert(channel);
+				char buffer[100];
+				int n = sprintf (buffer, "pu_sensed %d\0", channel);
+				HandlerCall::call_write(buffer,args->_llr, 0);
+				}
+			}
+			int noOfUnsensed;
+			cin >> noOfUnsensed;
+			for(int i=0; i<noOfUnsensed; i++) {
+				cin >> channel;
+				puChannels.erase(channel);
+				char buffer[100];
+				int n = sprintf (buffer, "pu_unsensed %d\0", channel);
+				HandlerCall::call_write(buffer,args->_llr, 0);	
+			}
+		}
+	}
+
+
 int
 PuCaller::configure(Vector<String> &conf, ErrorHandler * errh)
 {
@@ -25,6 +66,11 @@ PuCaller::configure(Vector<String> &conf, ErrorHandler * errh)
 		.read_mp("LAUNCH_RESPONDER", reinterpret_cast<Element *&>(_llr))
 	      .complete() < 0)
 	      return -1;
+	      struct  Pu_Thread_args *args = new  Pu_Thread_args();
+		args->_llr = _llr;
+		printf("PuCallerCreation ------------>>>>><<<<<<<\n");
+	pthread_t t1;
+	pthread_create(&t1, NULL, &run_pu_thread, (void *) args);	  	
 	_count = 0;
 	return 0;
 }

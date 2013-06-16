@@ -5,6 +5,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include <string.h>
+#include <set>
 #include <elements/userlevel/todevice.hh>
 #include <elements/local/launchrcvrlock.hh>
 
@@ -33,6 +34,7 @@ public:
 private:
   LaunchLockResponder* _llr;
   int _count;
+
 };
 
 CLICK_ENDDECLS
