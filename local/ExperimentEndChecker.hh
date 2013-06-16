@@ -21,10 +21,11 @@ public:
   Packet *simple_action(Packet *);
 
 	private:
-	String type;
-	uint32_t count;
-	int maxNumPackets;
+	long count;
+	uint32_t terminateAt;
+	String condition;
 	ExperimentEndHandler* _eeh;
+	long startTime;
 };
 
 CLICK_ENDDECLS
