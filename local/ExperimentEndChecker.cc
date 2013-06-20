@@ -21,6 +21,7 @@ ExperimentEndChecker::configure(Vector<String> &conf, ErrorHandler * errh)
 	      return -1;
 	count = 0;
 	startTime = Utilities::getCurrentTime();
+	packetCount = 0;
 	return 0;
 }
 
@@ -35,11 +36,12 @@ ExperimentEndChecker::simple_action(Packet *p)
 	else
 		count = Utilities::getCurrentTime() - startTime;
 	printf("SRC_COUNT: %d",count);
-	
 	if(count > terminateAt){
 		_eeh->endExperiment();
 		 return 0;
 	}
+	memcpy(p->data()+50,&packetCount,sizeof(packetCount));
+	packetCount++;
 	return p;
 }
 

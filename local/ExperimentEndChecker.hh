@@ -25,6 +25,7 @@ public:
 	uint32_t terminateAt;
 	String condition;
 	ExperimentEndHandler* _eeh;
+	long packetCount;
 	long startTime;
 };
 
