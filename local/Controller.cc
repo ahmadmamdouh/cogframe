@@ -82,8 +82,8 @@ private:
 		cin >> numberofAddresses;
 
 		for (int e = 0; e < numberofAddresses; e++) {
-			string address = "...", IP = "..";
-			cin >> address >> IP;
+			string address = "...", IP = "..", ifname = "..";
+			cin >> ifname >> address >> IP;
 			char * buffer = (char *) address.c_str();
 
 			TManager.insert_my_address(address);
