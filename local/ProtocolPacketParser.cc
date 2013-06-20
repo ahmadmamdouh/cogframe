@@ -32,7 +32,10 @@ ProtocolPacketParser::simple_action(Packet *p)
 	uint8_t src_address[6];
 	memcpy(src_address, ethh->ether_shost, 6);
 	string from_mac = Utilities::convert_uint8_to_string(src_address);
-	Controller::getInstance().addToProtocolTable(msg, fromTimestamp, timestamp,  from_mac,  Controller::getInstance().getAddress());
+	uint32_t flowNum;
+	memcpy(&flowNum, p->data()+61, sizeof(flowNum));
+	printf("-----------------------flowNUM_RECEIVED_PROTOCOL = %d\n",flowNum);
+	Controller::getInstance().addToProtocolTable(msg, fromTimestamp, timestamp,  from_mac,  Controller::getInstance().getAddress(),flowNum);
 	return p;	
 
 }

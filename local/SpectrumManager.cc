@@ -63,7 +63,10 @@ SpectrumManager::simple_action(Packet *p_in)
 	_currentChannel = channel;
 	long end = Utilities::getCurrentTime();
 	long switchTime = end - start;
-	Controller::getInstance().addToSwitchTable(ifName,start,switchTime,fromChannel,toChannel);
+	uint32_t flowNum;
+	memcpy(&flowNum, p_in->data()+61, sizeof(flowNum));
+		printf("-----------------------flowNUM_RECEIVED_SWITCHING = %d\n",flowNum);
+	Controller::getInstance().addToSwitchTable(ifName,start,switchTime,fromChannel,toChannel,flowNum);
 	printf("average_switching_time %s %d\n",if_name.c_str(),switchTime);
    }
   return p_in;

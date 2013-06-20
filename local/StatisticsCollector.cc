@@ -43,20 +43,24 @@ StatisticsCollector::simple_action(Packet *p_in)
 	memcpy(&id, p_in->data()+50, sizeof(id));
 	printf("Done Copy!!: %d\n",id);
 	// Sent packets handling
-	if(id >=0 && id <10001){
+	if(id >=0){
 		if(type == "S") {
 			// to_mac
 			click_ether *ethh = p_in->ether_header();
 			uint8_t dest_address[6];
 			memcpy(dest_address, ethh->ether_dhost, 6);
 			string to_mac = Utilities::convert_uint8_to_string(dest_address);
+			uint32_t flowNum;
+			memcpy(&flowNum, p_in->data()+61, sizeof(flowNum));
+			printf("-----------------------flowNUM_SENT = %d\n",flowNum);
 			// controller call
-			Controller::getInstance().addToSentTable(id, timestamp, to_mac);
+			Controller::getInstance().addToSentTable(id, timestamp, to_mac, flowNum);
 		} else if(type == "R") {
 			uint32_t flowNum;
 			memcpy(&flowNum, p_in->data()+61, sizeof(flowNum));
-			printf("--------%d\n",flowNum);
-			Controller::getInstance().addToReceivedTable(id,timestamp);
+			printf("............. ID = %d\n",id);
+			printf("-----------------------flowNUM_RECEIVED = %d\n",flowNum);
+			Controller::getInstance().addToReceivedTable(id,timestamp,flowNum);
 		}
 	}
 

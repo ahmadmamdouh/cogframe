@@ -82,8 +82,8 @@ private:
 		cin >> numberofAddresses;
 
 		for (int e = 0; e < numberofAddresses; e++) {
-			string address = "...", IP = "..", ifname = ""..;
-			cin >>ifname >> address >> IP;
+			string address = "...", IP = "..";
+			cin >> address >> IP;
 			char * buffer = (char *) address.c_str();
 
 			TManager.insert_my_address(address);
@@ -224,37 +224,47 @@ public:
 	string getName(){
 		return name;
 	}
-	vector <struct StatsSentEntry> getSentTable() {
+	map<int, vector <struct StatsSentEntry> > getSentTable() {
 		return sentTable;
 	}	
 
-	void addToSwitchTable(string ifName, long timestamp, long switchTime, int fromChannel, int toChannel,uint32_t flowNum){
+	void addToSwitchTable(string ifName, long timestamp, long switchTime, int fromChannel, int toChannel, uint32_t flowNum){
 		struct StatsTimeEntry ste(ifName, timestamp, switchTime, fromChannel, toChannel);
-		switchTable.push_back(ste);
-	}
-	
-	void addToReceivedTable(uint32_t id, long timestamp,uint32_t flowNum) {
-		struct StatsReceivedEntry sre(id, timestamp);
-		receivedTable.push_back(sre);
-	}
-	
-	void addToSentTable(uint32_t id, long timestamp, string to_mac,uint32_t flowNum) {
-		struct StatsSentEntry sse(id, timestamp, to_mac);
-		if(sentTable.count[flowNum]){
-			vector<struct StatsSentEntry> v;
-			v.push_back(sse);
-			sentTable[flowNum] = v;
-		}else{
-			printf("Insert in table\n");
-			sentTable.push_back(sse);
-			printf("Size of table: %d",sentTable.size());
+		if(!switchTable.count(flowNum)){
+				vector<struct StatsTimeEntry> v ;
+				switchTable[flowNum] = v;
 		}
+			switchTable[flowNum].push_back(ste);
+	}
+	
+	void addToReceivedTable(uint32_t id, long timestamp, uint32_t flowNum) {
+		struct StatsReceivedEntry sre(id, timestamp);
+		if(!receivedTable.count(flowNum)){
+			vector<struct StatsReceivedEntry> v;
+			receivedTable[flowNum] = v;
+		}
+		receivedTable[flowNum].push_back(sre);
+	}
+	
+	void addToSentTable(uint32_t id, long timestamp, string to_mac, uint32_t flowNum) {
+		struct StatsSentEntry sse(id, timestamp, to_mac);
+		printf("Insert in table\n");
+		if(!sentTable.count(flowNum)){
+			vector<struct StatsSentEntry> v;
+			sentTable[flowNum] = v;
+		}
+		sentTable[flowNum].push_back(sse);
+		printf("Size of table: %d",sentTable.size());
 	}
 	
 	
-	void addToProtocolTable(string msg, long fromTimestamp, long toTimestamp, string from_mac, string to_mac,uint32_t flowNum){
+	void addToProtocolTable(string msg, long fromTimestamp, long toTimestamp, string from_mac, string to_mac, uint32_t flowNum){
 		struct ProtocolEntry pt(msg, fromTimestamp, toTimestamp, from_mac, to_mac);
-		protocolTable.push_back(pt);
+		if(!protocolTable.count(flowNum)){
+			vector<struct ProtocolEntry> v;
+			protocolTable[flowNum] = v;
+		}
+		protocolTable[flowNum].push_back(pt);
 	}
 
 /*
@@ -295,16 +305,108 @@ public:
 		//myfile << "Name"<<endl;
 		//myfile << "Role"<<endl;
 		myfile<< getAddress() <<endl;
+	
+		
+	
+	
+		typedef map<int, vector<struct StatsReceivedEntry> >::iterator it_received;
+		typedef map<int, vector<struct StatsSentEntry> >::iterator it_sent;
+		typedef map<int, vector<struct ProtocolEntry> >::iterator it_protocol;
+		typedef map<int, vector<struct StatsTimeEntry> >::iterator it_switch;
+		int maxFlowNum = 0;
+		it_received it_rec = receivedTable.end();
+		it_rec --;
+		printf("RECEIVEDDDDD FLOWNUM = %d\n",it_rec -> first);
+		if(maxFlowNum < it_rec->first)
+			maxFlowNum = it_rec->first;
+			
+		it_sent it_s = sentTable.end();
+		it_s --;
+		printf("SENTTTT FLOWNUM = %d\n",it_s -> first);
+		if(maxFlowNum < it_s->first)
+			maxFlowNum = it_s->first;
+			
+		it_protocol it_p = protocolTable.end();
+		it_p --;
+		printf("PROTOCOOOOOL FLOWNUM = %d\n",it_p -> first);
+		if(maxFlowNum < it_p->first)
+			maxFlowNum = it_p->first;
+			
+		it_switch it_sw = switchTable.end();
+		it_sw --;
+		printf("SWIITTCHCHCHCHCH FLOWNUM = %d\n",it_sw -> first);
+		if(maxFlowNum < it_sw->first)
+			maxFlowNum = it_sw->first;
+		
+		printf("====== Max flownum = %d\n",maxFlowNum);
 		
 		
-		typedef std::map<std::string, vector<struct StatsSentEntry> >::iterator it_type;
-	for(it_type iterator = m.begin(); iterator != m.end(); iterator++) {
-		// iterator->first = key
-		// iterator->second = value
-		// Repeat if you also want to iterate through the second map.
-}
+		for(int flowNum =1; flowNum<= maxFlowNum ; flowNum ++){
+			myfile<<flowNum<<endl;	
+			myfile<<sentTable[flowNum].size()<<endl;
+			for (int i = 0; i < sentTable[flowNum].size(); ++i) {
+				struct StatsSentEntry sse = sentTable[flowNum][i];
+				printf("------------------------->>>> SENT TABLE\n");
+				myfile << sse.id << " "<< sse.timestamp << " " << sse.to_mac <<" "<<endl;
+			}	
+			myfile<<receivedTable[flowNum].size()<<endl;
+			for (int i = 0; i < receivedTable[flowNum].size(); ++i) {
+				struct StatsReceivedEntry sre = receivedTable[flowNum][i];
+				printf("------------------------->>>> RECEIVED TABLE\n");
+				myfile << sre.id << " "<< sre.timestamp << " "  <<endl;
+			}				
+			
+			// dump switching time table entries
+			myfile<<switchTable[flowNum].size()<<endl;
+			for (int i = 0; i < switchTable[flowNum].size(); ++i) {
+				struct StatsTimeEntry ste = switchTable[flowNum][i];
+				myfile << ste.ifName << " "<< ste.timestamp << " " <<ste.switchTime << " " <<  ste.fromChannel <<" "<<ste.toChannel <<" "<< endl;
+			}
+		
+			myfile<<protocolTable[flowNum].size()<<endl;
+			for (int i = 0; i < protocolTable[flowNum].size(); ++i) {
+				struct ProtocolEntry pt = protocolTable[flowNum][i];
+				myfile << pt.msg << " " << pt.from_mac << " " << pt.to_mac << " "<< pt.fromTimestamp  << " "<< pt.toTimestamp << " " << endl;
+			}
 		
 		
+		}
+		/*
+		for (it_received iterator = receivedTable.begin(); iterator != receivedTable.end(); iterator++){
+		
+		}
+		
+		for (it_type iterator = receivedTable.begin(); iterator != receivedTable.end(); iterator++){
+			uint32_t flowNum = iterator->first;
+			myfile<<sentTable[flowNum].size()<<endl;
+			for (int i = 0; i < sentTable[flowNum].size(); ++i) {
+				struct StatsSentEntry sse = sentTable[flowNum][i];
+				printf("------------------------->>>> SENT TABLE\n");
+				myfile << sse.id << " "<< sse.timestamp << " " << sse.to_mac <<" "<<flowNum<< endl;
+			}	
+			vector<StatsReceivedEntry> v = iterator->second;			
+			myfile<<v.size()<<endl;
+			for (int i = 0; i < v.size(); ++i) {
+				struct StatsReceivedEntry sre = v[i];
+				printf("------------------------->>>> RECEIVED TABLE\n");
+				myfile << sre.id << " "<< sre.timestamp << " " <<flowNum <<endl;
+			}				
+			
+		// dump switching time table entries
+		myfile<<switchTable[flowNum].size()<<endl;
+		for (int i = 0; i < switchTable[flowNum].size(); ++i) {
+			struct StatsTimeEntry ste = switchTable[flowNum][i];
+			myfile << ste.ifName << " "<< ste.timestamp << " " <<ste.switchTime << " " <<  ste.fromChannel <<" "<<ste.toChannel <<" "<< flowNum << endl;
+		}
+		
+		myfile<<protocolTable[flowNum].size()<<endl;
+		for (int i = 0; i < protocolTable[flowNum].size(); ++i) {
+			struct ProtocolEntry pt = protocolTable[flowNum][i];
+			myfile << pt.msg << " " << pt.from_mac << " " << pt.to_mac << " "<< pt.fromTimestamp  << " "<< pt.toTimestamp << " " << flowNum << endl;
+		}
+		
+		} 
+		/*
 		myfile<<sentTable.size()<<endl;
 		for (int i = 0; i < sentTable.size(); ++i) {
 			struct StatsSentEntry sse = sentTable[i];
@@ -321,18 +423,18 @@ public:
 		}
 		
 		// dump switching time table entries
-		myfile<<switchTable.size()<<endl;
-		for (int i = 0; i < switchTable.size(); ++i) {
-			struct StatsTimeEntry ste = switchTable[i];
+		myfile<<switchTable[1].size()<<endl;
+		for (int i = 0; i < switchTable[1].size(); ++i) {
+			struct StatsTimeEntry ste = switchTable[1][i];
 			myfile << ste.ifName << " "<< ste.timestamp << " " <<ste.switchTime << " " <<  ste.fromChannel <<" "<<ste.toChannel << endl;
 		}
 		
-		myfile<<protocolTable.size()<<endl;
-		for (int i = 0; i < protocolTable.size(); ++i) {
-			struct ProtocolEntry pt = protocolTable[i];
+		myfile<<protocolTable[1].size()<<endl;
+		for (int i = 0; i < protocolTable[1].size(); ++i) {
+			struct ProtocolEntry pt = protocolTable[1][i];
 			myfile << pt.msg << " " << pt.from_mac << " " << pt.to_mac << " "<< pt.fromTimestamp  << " "<< pt.toTimestamp << endl;
 		}
-		
+		*/
 		myfile<< puActive.size() << endl;
 		map<string, vector<string > >::const_iterator activeItr;
 		for(activeItr = puActive.begin(); activeItr != puActive.end();++activeItr){
