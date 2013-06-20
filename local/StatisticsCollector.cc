@@ -53,6 +53,9 @@ StatisticsCollector::simple_action(Packet *p_in)
 			// controller call
 			Controller::getInstance().addToSentTable(id, timestamp, to_mac);
 		} else if(type == "R") {
+			uint32_t flowNum;
+			memcpy(&flowNum, p_in->data()+61, sizeof(flowNum));
+			printf("--------%d\n",flowNum);
 			Controller::getInstance().addToReceivedTable(id,timestamp);
 		}
 	}

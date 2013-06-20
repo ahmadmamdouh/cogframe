@@ -29,10 +29,10 @@ private:
 	TopologyManager TManager;
 	map<int, struct Channel> *channels;
 	vector<int> *channels_id;
-	vector<struct StatsSentEntry> sentTable;
-	vector<struct StatsTimeEntry> switchTable;
-	vector<struct StatsReceivedEntry> receivedTable;
-	vector<struct ProtocolEntry> protocolTable;
+	map<int, vector<struct StatsSentEntry> > sentTable;
+	map<int, vector<struct StatsTimeEntry> > switchTable;
+	map<int, vector<struct StatsReceivedEntry> > receivedTable;
+	map<int, vector<struct ProtocolEntry> > protocolTable;
 	ProbabilisticDistributionsLoader pdl;
 	map<string, vector< string > >  puActive;
 	int identifierType(string identifier){
@@ -77,12 +77,12 @@ private:
 			char * buffer = (char *) address.c_str();
 			TManager.insert_my_address(address);
 		}
-		
+
 		//My WiFi addresses
 		cin >> numberofAddresses;
 
 		for (int e = 0; e < numberofAddresses; e++) {
-			string address = "...", IP = "..", ifname = "..";
+			string address = "...", IP = "..", ifname = ""..;
 			cin >>ifname >> address >> IP;
 			char * buffer = (char *) address.c_str();
 
@@ -228,25 +228,31 @@ public:
 		return sentTable;
 	}	
 
-	void addToSwitchTable(string ifName, long timestamp, long switchTime, int fromChannel, int toChannel){
+	void addToSwitchTable(string ifName, long timestamp, long switchTime, int fromChannel, int toChannel,uint32_t flowNum){
 		struct StatsTimeEntry ste(ifName, timestamp, switchTime, fromChannel, toChannel);
 		switchTable.push_back(ste);
 	}
 	
-	void addToReceivedTable(uint32_t id, long timestamp) {
+	void addToReceivedTable(uint32_t id, long timestamp,uint32_t flowNum) {
 		struct StatsReceivedEntry sre(id, timestamp);
 		receivedTable.push_back(sre);
 	}
 	
-	void addToSentTable(uint32_t id, long timestamp, string to_mac) {
+	void addToSentTable(uint32_t id, long timestamp, string to_mac,uint32_t flowNum) {
 		struct StatsSentEntry sse(id, timestamp, to_mac);
-		printf("Insert in table\n");
-		sentTable.push_back(sse);
-		printf("Size of table: %d",sentTable.size());
+		if(sentTable.count[flowNum]){
+			vector<struct StatsSentEntry> v;
+			v.push_back(sse);
+			sentTable[flowNum] = v;
+		}else{
+			printf("Insert in table\n");
+			sentTable.push_back(sse);
+			printf("Size of table: %d",sentTable.size());
+		}
 	}
 	
 	
-	void addToProtocolTable(string msg, long fromTimestamp, long toTimestamp, string from_mac, string to_mac){
+	void addToProtocolTable(string msg, long fromTimestamp, long toTimestamp, string from_mac, string to_mac,uint32_t flowNum){
 		struct ProtocolEntry pt(msg, fromTimestamp, toTimestamp, from_mac, to_mac);
 		protocolTable.push_back(pt);
 	}
@@ -289,6 +295,16 @@ public:
 		//myfile << "Name"<<endl;
 		//myfile << "Role"<<endl;
 		myfile<< getAddress() <<endl;
+		
+		
+		typedef std::map<std::string, vector<struct StatsSentEntry> >::iterator it_type;
+	for(it_type iterator = m.begin(); iterator != m.end(); iterator++) {
+		// iterator->first = key
+		// iterator->second = value
+		// Repeat if you also want to iterate through the second map.
+}
+		
+		
 		myfile<<sentTable.size()<<endl;
 		for (int i = 0; i < sentTable.size(); ++i) {
 			struct StatsSentEntry sse = sentTable[i];
