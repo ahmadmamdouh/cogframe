@@ -314,30 +314,36 @@ public:
 		typedef map<int, vector<struct ProtocolEntry> >::iterator it_protocol;
 		typedef map<int, vector<struct StatsTimeEntry> >::iterator it_switch;
 		int maxFlowNum = 0;
-		it_received it_rec = receivedTable.end();
-		it_rec --;
-		printf("RECEIVEDDDDD FLOWNUM = %d\n",it_rec -> first);
-		if(maxFlowNum < it_rec->first)
-			maxFlowNum = it_rec->first;
-			
-		it_sent it_s = sentTable.end();
-		it_s --;
-		printf("SENTTTT FLOWNUM = %d\n",it_s -> first);
-		if(maxFlowNum < it_s->first)
-			maxFlowNum = it_s->first;
-			
-		it_protocol it_p = protocolTable.end();
-		it_p --;
-		printf("PROTOCOOOOOL FLOWNUM = %d\n",it_p -> first);
-		if(maxFlowNum < it_p->first)
-			maxFlowNum = it_p->first;
-			
-		it_switch it_sw = switchTable.end();
-		it_sw --;
-		printf("SWIITTCHCHCHCHCH FLOWNUM = %d\n",it_sw -> first);
-		if(maxFlowNum < it_sw->first)
-			maxFlowNum = it_sw->first;
+		if(receivedTable.size() > 0){
+			it_received it_rec = receivedTable.end();
+			it_rec --;
 		
+			printf("RECEIVEDDDDD FLOWNUM = %d\n",it_rec -> first);
+			if(maxFlowNum < it_rec->first)
+				maxFlowNum = it_rec->first;
+		}
+		if(sentTable.size() > 0){
+			it_sent it_s = sentTable.end();
+			it_s --;
+		
+			printf("SENTTTT FLOWNUM = %d\n",it_s -> first);
+			if(maxFlowNum < it_s->first)
+				maxFlowNum = it_s->first;
+		}
+		if(protocolTable.size() > 0){
+			it_protocol it_p = protocolTable.end();
+			it_p --;
+			printf("PROTOCOOOOOL FLOWNUM = %d\n",it_p -> first);
+			if(maxFlowNum < it_p->first)
+				maxFlowNum = it_p->first;
+		}
+		if(switchTable.size() > 0){
+			it_switch it_sw = switchTable.end();
+			it_sw --;
+			printf("SWIITTCHCHCHCHCH FLOWNUM = %d\n",it_sw -> first);
+			if(maxFlowNum < it_sw->first)
+				maxFlowNum = it_sw->first;
+		}
 		printf("====== Max flownum = %d\n",maxFlowNum);
 		
 		
