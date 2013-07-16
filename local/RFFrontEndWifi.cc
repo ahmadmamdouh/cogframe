@@ -22,7 +22,7 @@ void change_channel(String _if_name, uint8_t channel,String type) {
 	char buffer [3000]; // buffer for system calls.
 	int n;
 	char name[30];
-	int hostID = (type[0]=='R')? 11 : 12;
+	int hostID = (type[0]=='R')? 13 : 14;
 	n = sprintf(name, "Adhoc_Channel_%d\0", channel);
 	printf("sudo ifconfig %s down\n",if_name);
 	n = sprintf (buffer, "sudo ifconfig %s down\0",if_name);

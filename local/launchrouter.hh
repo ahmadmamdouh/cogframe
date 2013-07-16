@@ -52,7 +52,8 @@ class LaunchRouter : public Element { public:
   uint8_t channel_used ;
 
 private:
-
+	int counter;
+	
 	list<Packet *> packets_holded;
 
 	Packet * _holded_packet;

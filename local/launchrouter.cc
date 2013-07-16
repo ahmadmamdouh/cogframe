@@ -45,6 +45,7 @@ LaunchRouter::configure(Vector<String> &conf, ErrorHandler * errh)
 	  .complete() < 0)
       return -1;
   
+  	counter = 0;
 	memcpy(_eth ,_ether_address_eth.data(),sizeof(_eth));
 	
 	return 0;
@@ -63,6 +64,10 @@ Packet *
 LaunchRouter::simple_action(Packet *p_in)
 {
 	_holded_packet = p_in->uniqueify();
+	
+	counter++;
+//	printf("---><<<<<>>>>>>>--- %d\n", counter);
+
 	
 	//if router has been initialized with a lock and a routing table
 	//the the packet is directly processed 
@@ -114,6 +119,7 @@ LaunchRouter::simple_action(Packet *p_in)
 		//then send CTRL REQ to all neighbours
 		else
 		{
+			printf("Finding a new neighbor");
 			_requester->send_request();
 			_respone_waiting_timer.schedule_after_msec(_repsonse_waiting_ms);
 			_ready_for_another_packet = false;
@@ -271,13 +277,18 @@ void
 LaunchRouter::update_route(const IPAddress &nip,int chls_size, uint8_t* chls_id, float* chls_pu_prob)
 {
 	RouteEntry* temp = _rtes.findp(nip);
+	bool routingTable = true;
 	printf("UPDATING ROUTE\n");
 	for (int i = 0; i < chls_size; i++) {
 		int channel_id = chls_id[i];
 		map<int, struct Channel> *tempChannels = temp->channels;
 		(*tempChannels)[channel_id].pu_prob = chls_pu_prob[i];
+		if(chls_pu_prob[i] != 1)
+			routingTable = false;
 		printf("prob channel %d : %f\n",i,chls_pu_prob[i]);
 	}
+	if(routingTable)
+		_routingtable_available = false;
 	printf(".................\n");
 }
 

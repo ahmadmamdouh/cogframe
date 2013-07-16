@@ -48,7 +48,7 @@ Packet *
 SpectrumManager::simple_action(Packet *p_in)
 {
    uint8_t channel = p_in->user_anno_u8(offset); //channel annotated in user_anno_u8
-   if(channel != 0)//if channel = 0 then there is no channel annotated in the packet, so skip
+   if(channel != 0&& channel !=_currentChannel)//if channel = 0 then there is no channel annotated in the packet, so skip
    { 
 	
 	string ifName = Utilities::convert_String_to_string(if_name);

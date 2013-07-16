@@ -135,7 +135,7 @@ LaunchLockResponder::pu_sensed(const String &s, Element *e, void *, ErrorHandler
 	vector<int> *channel_ids = controller.get_channels();
 	_lh.channels_size = (*channel_ids).size();
 	int new_channel_id = -1;
-	float min_pu_prob = 1<<28;
+	float min_pu_prob = 1;
 	for(int i=0;i<(*channel_ids).size();i++) {
 		int channel_id = (*channel_ids)[i];
 		float pu_prob = controller.get_pu_prob(channel_id);
