@@ -1,3 +1,4 @@
+/*
 #include <elements/local/RfFrontEnd.hh>
 #include <elements/local/RFFrontEndWifi.cc>
 class RfFrontEndFactory{ public:
@@ -14,3 +15,4 @@ RfFrontEnd* getRfFrontEnd (String type){
 		return rf;
 	}
 };
+*/

@@ -29,6 +29,7 @@ public:
 
   int configure(Vector<String> &, ErrorHandler *);
   Packet *simple_action(Packet *);
+  void registerRFFrontEnd(RfFrontEnd*);
  // void change_channel(String ,uint8_t );
 	int getCurrentChannel();
 	private:
@@ -37,7 +38,7 @@ public:
 	String type;
 	String rfType;
 	int _currentChannel;
-	RfFrontEnd* rf;
+	RfFrontEnd* _rf;
 
 
 };

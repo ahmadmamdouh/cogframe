@@ -37,8 +37,8 @@ SpectrumManager::configure(Vector<String> &conf, ErrorHandler * errh)
 	      .complete() < 0)
 	      return -1;
 	      
-	     RfFrontEndFactory rfFactory;
-	     rf = rfFactory.getRfFrontEnd(rfType);
+	    // RfFrontEndFactory rfFactory;
+	    // rf = rfFactory.getRfFrontEnd(rfType);
 	     _currentChannel = -1; // off/any 
 	     	     
 	return 0;
@@ -57,9 +57,9 @@ SpectrumManager::simple_action(Packet *p_in)
 	
 	//printf("Elapsed time: %lld milliseconds\n", mtime);
 	Controller::getInstance().setCurrentChannel(ifName,toChannel);
-	rf->scan(if_name);
+	_rf->scan(if_name);
 	long start = Utilities::getCurrentTime();
-	rf->change_channel(if_name, channel,type);
+	_rf->change_channel(if_name, channel,type);
 	_currentChannel = channel;
 	long end = Utilities::getCurrentTime();
 	long switchTime = end - start;
@@ -72,6 +72,14 @@ SpectrumManager::simple_action(Packet *p_in)
   return p_in;
 }
 
+
+
+void
+SpectrumManager :: registerRFFrontEnd(RfFrontEnd* rf){
+	printf("Registering RFFrontEnd\n");
+	_rf = rf;
+
+}
 CLICK_ENDDECLS
 EXPORT_ELEMENT(SpectrumManager)
 

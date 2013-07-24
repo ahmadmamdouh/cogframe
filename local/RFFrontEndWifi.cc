@@ -1,22 +1,41 @@
-#ifndef RFFRONTENDWIFI_hh
-#define RFFRONTENDWIFI_hh
-#include<stdio.h>
-#include<stdlib.h>
-#include <string.h>
+#include <click/config.h>
+#include <click/args.hh>
+#include <clicknet/ether.h>
+#include <click/error.hh>
+#include <click/glue.hh>
+#include <click/confparse.hh>
+#include <elements/local/RFFrontEndWifi.hh>
+#include <string>
 #include "iwlib.h"
-#include <unistd.h>
-#include <elements/local/RfFrontEnd.hh>
+CLICK_DECLS
 
-class RFFrontEndWifi: public RfFrontEnd{ public:
+using namespace std;
+/**
+*/
 
-RFFrontEndWifi() {
+RFFrontEndWifi::RFFrontEndWifi()
+{
 }
 
-~RFFrontEndWifi() {
+RFFrontEndWifi::~RFFrontEndWifi()
+{
 }
 
-void change_channel(String _if_name, uint8_t channel,String type) {
-	click_chatter("#####RFFRONTEND_CHANNELCHANGE#####");
+int
+RFFrontEndWifi::configure(Vector<String> &conf, ErrorHandler * errh)
+{
+	if (Args(conf, this, errh)
+	       .read_mp("spectrumManager", reinterpret_cast<Element *&>(_spectrum_manager))
+	      .complete() < 0)
+	      return -1;
+	      _spectrum_manager -> registerRFFrontEnd(this);
+	return 0;
+}
+
+
+void
+RFFrontEndWifi::change_channel(String _if_name, uint8_t channel,String type){
+click_chatter("#####RFFRONTEND_CHANNELCHANGE#####");
 	printf("Channel_Switching %s %d\n",_if_name.c_str(), channel);
 	char* if_name = _if_name.c_str();
 	char buffer [3000]; // buffer for system calls.
@@ -42,14 +61,16 @@ void change_channel(String _if_name, uint8_t channel,String type) {
 	n = sprintf (buffer, "sudo ifconfig %s 192.168.%d.%d netmask 255.255.255.0\0",if_name,channel,hostID);
 	n = system(buffer);
 	printf("Done Switching..\n");
-}
 
-void scan(String _ifname){
+}
+void 
+RFFrontEndWifi::scan(String _ifname){
 	click_chatter("####RFFRONTEND_SCAN####");
 	char buffer [3000];	
 	int n = sprintf (buffer, "sudo iwlist %s scan",_ifname.c_str());
 	n = system(buffer);
 }
 
-};
-#endif
+CLICK_ENDDECLS
+EXPORT_ELEMENT(RFFrontEndWifi)
+
